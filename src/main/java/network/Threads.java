@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.sql.SQLOutput;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -58,6 +59,7 @@ public class Threads extends Thread {
     byte[] body = null;
     byte[] packet = null;
     Message txMsg = null;
+    private StudentDAO studentDAO;
     Message rxMsg = null;
     private static int loggedInUserId = -1;
     public Threads(Socket socket) {
@@ -69,6 +71,7 @@ public class Threads extends Thread {
         this.mealService = new MealService();
         this.scheduleDAO = new ScheduleDAO();
         this.withdrawDAO = new WithdrawDAO();
+        this.studentDAO = new StudentDAO();
         this.admissionDAO = new AdmissionDAO();
         this.applicationPreferenceDAO = new ApplicationPreferenceDAO();
         this.applicationDAO = new ApplicationDAO();
@@ -746,6 +749,30 @@ public class Threads extends Thread {
                                 out.write(packet);
                                 out.flush();
                                 break;
+
+                            case Packet.CHECK_DATE:
+                                String feature;
+
+                                if(rxMsg.getDetail() == Packet.APPLY_ADMISSION){
+                                    feature = "생활관 입사 신청";
+                                } else if (rxMsg.getDetail() == Packet.CHECK_ADMISSION) {
+                                    feature = "생활관 배정 및 합격자 발표";
+                                } else if (rxMsg.getDetail() == Packet.CHECK_PAY_DORMITORY) {
+                                    feature = "생활관비 납부";
+                                }else {
+                                    feature = "결핵진단서 제출";
+                                }
+
+
+                                if (isSuccess(feature)) {
+                                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, "")));
+                                    out.flush();
+                                } else {
+                                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "")));
+                                    out.flush();
+                                }
+
+                                break;
                         }
                         break;
 
@@ -759,16 +786,35 @@ public class Threads extends Thread {
                             String password = parts[1];
                             loggedInUserId = Integer.parseInt(id);
                             UserDTO user = userDAO.findUser(Integer.parseInt(id));
+                            String gender = null;
+                            boolean flag = false;
+
+                            if (user.getRole().equals("학생"))
+                            {
+                                flag = true;
+                                gender = studentDAO.getGender(Integer.parseInt(id));
+                            }
+
                             boolean loginSuccess = (user != null) &&
                                     String.valueOf(user.getPassword()).equals(password);
 
-                            if(loginSuccess) {
-                                String responseData = user.getId() + "," + user.getRole();
+                            if (loginSuccess && flag) {
+                                String responseData = user.getId() + "," + user.getRole() + "," + gender;
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.SUCCESS, responseData);
                                 studentID = user.getId();
                                 System.out.println("User " + id + " logged in successfully");
-                            } else {
+                            }
+
+                            else if (loginSuccess && !flag) {
+                                gender = "123";
+                                String responseData = user.getId() + "," + user.getRole() + "," + gender ;
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
+                                        Packet.SUCCESS, responseData);
+                                studentID = user.getId();
+                                System.out.println("User " + id + " logged in successfully");
+                            }
+                            else {
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.FAIL, "Login Failed");
                                 System.out.println("Login failed for user " + id);
@@ -814,6 +860,39 @@ public class Threads extends Thread {
             int mealId = mealService.getMealId(dormitoryId, mealType);
             return mealId;
         }
+    }
+
+    public boolean isSuccess(String feature){
+
+
+        ScheduleService scheduleService = new ScheduleService();
+        List<ScheduleDTO> s = scheduleService.getSchedules();
+        for(ScheduleDTO schedule : s){
+            if(schedule.getPeriodName().equals(feature)){
+                //String startDate, String startTime, String endDate, String endTime
+                return isWithinPeriod(schedule.getStartDate(),schedule.getStartHour(),schedule.getEndDate(),schedule.getEndHour());
+            }
+        }
+        return false;
+    }
+    public static boolean isWithinPeriod(String startDate, String startTime, String endDate, String endTime) {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // 시작 시간 및 종료 시간
+        LocalDateTime startDateTime = LocalDateTime.parse(startDate + " " + startTime, dateTimeFormatter);
+        LocalDateTime endDateTime = LocalDateTime.parse(endDate + " " + endTime, dateTimeFormatter);
+
+        // 현재 시간
+        LocalDateTime now = LocalDateTime.now();
+        System.out.println("현재 시간: " + now);
+        System.out.println("시작 시간: " + startDateTime);
+        System.out.println("종료 시간: " + endDateTime);
+
+        // 현재 시간이 기간 내에 있는지 확인
+        boolean result = (now.isEqual(startDateTime) || now.isAfter(startDateTime)) && (now.isEqual(endDateTime) || now.isBefore(endDateTime));
+        System.out.println("결과: " + result);
+
+        return result;
     }
 
     private void closeResources() {

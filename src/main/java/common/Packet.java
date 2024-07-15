@@ -35,13 +35,17 @@ public class Packet{
     public static final byte VIEW_PAID_STUDENTS = 12;      // 생활관 비용 납부자 조회
     public static final byte VIEW_UNPAID_STUDENTS = 13;    // 생활관 비용 미납부자 조회
     public static final byte CHECK_CERTIFICATES = 14;      // 결핵진단서 제출 확인
-    public static final byte PROCESS_WITHDRAWAL = 15;     // 퇴사 신청자 조회 및 환불
+    public static final byte PROCESS_WITHDRAWAL = 15;
+    // 퇴사 신청자 조회 및 환불
+
+    public static final byte CHECK_DATE = 0;
 
     // Protocol Detail
     public static final byte NOT_USED = 0;
     public static final byte SUCCESS = 1;
     public static final byte FAIL = 2;
     public static final byte END_CONNECT = 3;
+
 
     private byte[] packet;
     private int dataLength = 0;

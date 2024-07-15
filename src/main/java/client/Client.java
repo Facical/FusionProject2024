@@ -29,7 +29,7 @@ public class Client {
     Message rxMsg = null;
     private static int loggedInUserId = -1;
     private int studentId;
-
+    private String gender = null;
 
     byte[] header = null;
     byte[] body = null;
@@ -87,6 +87,7 @@ public class Client {
                             String[] parts = data.split(",");
                             int userId = Integer.parseInt(parts[0]);
                             String userRole = parts[1];
+                            gender = parts[2];
 
                             if (userRole.equals("학생")) {
                                 this.studentId = userId;
@@ -140,11 +141,15 @@ public class Client {
                     break;
 
                 case 2: // 1.2 기능
-                    String feature = "생활관 입사 신청";
-                    if(!isSuccess(feature)){
+                    out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_DATE, Packet.APPLY_ADMISSION, "")));
+                    out.flush();
+
+                    rxMsg = Message.readMessage(in);
+                    if(rxMsg.getDetail() == Packet.FAIL){
                         System.out.println("생활관 입사 신청 기간이 아닙니다!");
                         break;
                     }
+
 
                     System.out.println("============= 입사 신청 =============");
                     System.out.println("오름관 1동, 푸름관 3동 : 여자만 신청 가능");
@@ -222,11 +227,15 @@ public class Client {
 
                 case 3: // 1.3 기능
                     //합격 여부 및 호실 확인
-                    feature = "생활관 배정 및 합격자 발표";
-                    if(!isSuccess(feature)) {
+                    out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_DATE, Packet.CHECK_ADMISSION, "")));
+                    out.flush();
+
+                    rxMsg = Message.readMessage(in);
+                    if(rxMsg.getDetail() == Packet.FAIL){
                         System.out.println("생활관 배정 및 합격자 발표 기간이 아닙니다!");
                         break;
                     }
+
 
                     txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_ADMISSION,
                             Packet.NOT_USED, "합격 여부 및 호실 확인 조회 요청");
@@ -256,15 +265,20 @@ public class Client {
 
 
                 case 4: // 1.4 생활관 비용 확인 및 납부
-                    feature = "생활관비 납부";
-                    if(!isSuccess(feature)){
+
+                    out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_DATE, Packet.CHECK_PAY_DORMITORY, "")));
+                    out.flush();
+
+                    rxMsg = Message.readMessage(in);
+                    if(rxMsg.getDetail() == Packet.FAIL){
                         System.out.println("생활관 비용 확인 및 납부 기간이 아닙니다!");
                         break;
                     }
+
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_PAY_DORMITORY, Packet.NOT_USED, "")));
                     out.flush();
 
-                    Message rxMsg = Message.readMessage(in);
+                    rxMsg = Message.readMessage(in);
                     Message.printMessage(rxMsg);
 
                     byte type = rxMsg.getType();
@@ -309,11 +323,15 @@ public class Client {
                     break;
 
                 case 5:
-                    feature = "결핵진단서 제출";
-                    if(!isSuccess(feature)){
+                    out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_DATE, Packet.SUBMIT_CERTIFICATE, "")));
+                    out.flush();
+
+                    rxMsg = Message.readMessage(in);
+                    if(rxMsg.getDetail() == Packet.FAIL){
                         System.out.println("결핵진단서 제출 기간이 아닙니다!");
                         break;
                     }
+
                     System.out.println("=== 결핵진단서 제출 ===");
                     System.out.print("제출할 파일 경로 입력: ");
                     String filePath = br.readLine();
@@ -704,36 +722,6 @@ public class Client {
         }
     }
 
-    public boolean isSuccess(String feature){
-        ScheduleService scheduleService = new ScheduleService();
-        List<ScheduleDTO> s = scheduleService.getSchedules();
-        for(ScheduleDTO schedule : s){
-            if(schedule.getPeriodName().equals(feature)){
-                //String startDate, String startTime, String endDate, String endTime
-                return isWithinPeriod(schedule.getStartDate(),schedule.getStartHour(),schedule.getEndDate(),schedule.getEndHour());
-            }
-        }
-        return false;
-    }
-    public static boolean isWithinPeriod(String startDate, String startTime, String endDate, String endTime) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-        // 시작 시간 및 종료 시간
-        LocalDateTime startDateTime = LocalDateTime.parse(startDate + " " + startTime, dateTimeFormatter);
-        LocalDateTime endDateTime = LocalDateTime.parse(endDate + " " + endTime, dateTimeFormatter);
-
-        // 현재 시간
-        LocalDateTime now = LocalDateTime.now();
-        System.out.println("현재 시간: " + now);
-        System.out.println("시작 시간: " + startDateTime);
-        System.out.println("종료 시간: " + endDateTime);
-
-        // 현재 시간이 기간 내에 있는지 확인
-        boolean result = (now.isEqual(startDateTime) || now.isAfter(startDateTime)) && (now.isEqual(endDateTime) || now.isBefore(endDateTime));
-        System.out.println("결과: " + result);
-
-        return result;
-    }
 
     private void closeResources() {
         try {

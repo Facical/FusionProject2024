@@ -18,6 +18,7 @@ public class Packet{
 
     // Protocol Code
     public static final byte Login = 0;
+    public static final byte CHECK_SCHEDULE = 1;
 
     // Protocol Detail
     public static final byte NOT_USED = 0;

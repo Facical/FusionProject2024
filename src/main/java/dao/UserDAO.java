@@ -1,7 +1,6 @@
-package persistence.dao;
+package dao;
 
-import persistence.PooledDataSource;
-import persistence.dto.UserDTO;
+import dto.UserDTO;
 
 import javax.sql.DataSource;
 import java.sql.*;

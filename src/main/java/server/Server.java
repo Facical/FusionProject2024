@@ -1,4 +1,6 @@
-package network;
+package server;
+
+import network.Threads;
 
 import java.io.IOException;
 import java.net.ServerSocket;

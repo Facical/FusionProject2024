@@ -1,8 +1,9 @@
 // Threads.java
 package network;
 
-import persistence.dto.UserDTO;
-import persistence.dao.UserDAO;
+import common.Packet;
+import dto.UserDTO;
+import dao.UserDAO;
 import java.io.*;
 import java.net.Socket;
 

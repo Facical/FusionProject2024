@@ -1,4 +1,7 @@
-package network;
+package client;
+
+import network.Message;
+import common.Packet;
 
 import java.io.*;
 import java.net.Socket;

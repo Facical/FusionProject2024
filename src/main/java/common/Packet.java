@@ -1,5 +1,7 @@
-package network;
+package common;
 
+
+import network.Message;
 
 public class Packet{
     public static final int LEN_HEADER = 6;

@@ -18,7 +18,7 @@ public class Message{
     private String data;
 
     public Message(){
-        this.type = 0;
+        this.type = 10;
         this.code = 0;
         this.detail = 0;
         this.data = null;

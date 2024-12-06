@@ -97,7 +97,7 @@ public class Threads extends Thread {
                                     newSchedule.setPeriodName(parts[0]);
 
                                     // 문자열을 Timestamp로 변환
-                                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
                                     dateFormat.parse(parts[1]);
                                     dateFormat.parse(parts[2]);

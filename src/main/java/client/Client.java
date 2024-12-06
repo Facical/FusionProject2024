@@ -137,6 +137,19 @@ public class Client {
                         }
                     }
                     break;
+                case 2: // 1.2 기능
+
+                case 3: // 1.3 기능
+
+                case 4: // 1.4 기능
+
+                case 5: // 1.5 기능
+
+                case 6: // 1.6 기능
+
+                case 7: // 1.7 기능
+
+                case 8: // 1.8 기능
 
                 case 0: // 종료
                     return;
@@ -184,6 +197,17 @@ public class Client {
                         System.out.println("일정 등록 실패: " + rxMsg.getData());
                     }
                     break;
+                case 2: // 1.2 기능
+
+                case 3: // 1.3 기능
+
+                case 4: // 1.4 기능
+
+                case 5: // 1.5 기능
+
+                case 6: // 1.6 기능
+
+                case 7: // 1.7 기능
 
                 case 0: // 종료
                     return;

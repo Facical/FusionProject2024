@@ -5,6 +5,8 @@ import lombok.Setter;
 import lombok.ToString;
 @Getter
 @Setter
+@ToString
+
 public class ScheduleDTO {
 
     private int scheduleId;

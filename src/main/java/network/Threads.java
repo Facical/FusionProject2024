@@ -28,6 +28,7 @@ public class Threads extends Thread {
     public Threads(Socket socket) {
         this.socket = socket;
         this.userDAO = new UserDAO();
+        this.scheduleDAO = new ScheduleDAO();
     }
 
     public void run() {
@@ -35,7 +36,7 @@ public class Threads extends Thread {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
 
-                //
+            // 초기 로그인 요청 메시지 전송
             txMsg = Message.makeMessage(Packet.REQUEST, Packet.Login, Packet.NOT_USED, "Login Request");
             packet = Packet.makePacket(txMsg);
             out.write(packet);
@@ -52,26 +53,39 @@ public class Threads extends Thread {
                 Message.makeMessageBody(rxMsg, body);
                 Message.printMessage(rxMsg);
                 byte type = rxMsg.getType();
+
+                System.out.println("test" + type);
+
                 switch(type) {
+
                     case Packet.REQUEST:
-                        rxMsg = new Message();
+                        /*rxMsg = new Message();
                         header = new byte[Packet.LEN_HEADER];
                         in.read(header);
                         Message.makeMessageHeader(rxMsg, header);
                         body = new byte[rxMsg.getLength()];
                         in.read(body);
                         Message.makeMessageBody(rxMsg, body);
-                        Message.printMessage(rxMsg);
+                        Message.printMessage(rxMsg);*/
                         byte code = rxMsg.getCode();
+                        System.out.println("코드 받음");
+
                         switch(code){
                             case Packet.CHECK_SCHEDULE:
-                            ScheduleDTO schedule = scheduleDAO.getSchedule();
+                                System.out.println("스케쥴 조회전");
+                                ScheduleDTO schedule = scheduleDAO.getSchedule();
+
                                 String newData = schedule.getPeriodName() + "," + schedule.getStartDate() +"," + schedule.getEndDate();
+                                System.out.println(newData);
+
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.SUCCESS, newData);
                                 packet = Packet.makePacket(txMsg);
                                 out.write(packet);
                                 out.flush();
+                                return; // 이 부분 수정
+                            //break;
                         }
+
                     case Packet.RESPONSE:
                         System.out.println("로그인 응답 정보 도착");
                         String data = rxMsg.getData();
@@ -79,9 +93,12 @@ public class Threads extends Thread {
                             String[] parts = data.split(",");
                             String id = parts[0];
                             String password = parts[1];
+
                             UserDTO user = userDAO.findUser(Integer.parseInt(id));
                             boolean loginSuccess = (user != null) &&
                                     String.valueOf(user.getPassword()).equals(password);
+
+
                             if(loginSuccess) {
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
                                         Packet.SUCCESS, user.getRole());
@@ -95,9 +112,11 @@ public class Threads extends Thread {
                             packet = Packet.makePacket(txMsg);
                             out.write(packet);
                             out.flush();
-                            return;
+                            //return;
                         }
                         break;
+
+                    default:
                 }
             }
         } catch (IOException e) {

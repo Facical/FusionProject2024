@@ -25,6 +25,7 @@ public class UserDAO {
                 user = new UserDTO();
                 user.setId(rs.getInt("user_id"));
                 user.setPassword(rs.getInt("password"));
+                user.setRole(rs.getString("role"));
             }
         } catch (SQLException e) {
             e.printStackTrace();

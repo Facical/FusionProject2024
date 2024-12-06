@@ -1,48 +1,65 @@
-// SelectionScheduleDAO.java
+// ScheduleDAO.java
 package dao;
 
 import dto.ScheduleDTO;
 import javax.sql.DataSource;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ScheduleDAO { //DB 업데이트
+public class ScheduleDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
-    //private ScheduleDTO scheduleDTO;// = null;
 
-    // 스케쥴 가져오기
-    public ScheduleDTO getSchedule() {  // boolean 대신 int 반환
+    // 모든 선발 일정 조회
+    public List<ScheduleDTO> getAllSchedules() {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        ScheduleDTO scheduleDTO = null; //new ScheduleDTO();
+        List<ScheduleDTO> schedules = new ArrayList<>();
 
         try {
             conn = ds.getConnection();
-            String sql = "SELECT * FROM selection_schedule WHERE schedule_id = 1";
-            // String sql = "SELECT * FROM selection_schedule selection_schedule (period_name, start_date, end_date) VALUES (?, ?, ?)";
-            pstmt = conn.prepareStatement(sql);  // 생성된 키 반환 설정
-            //pstmt.setInt(1, scheduleDTO.getScheduleId());
-            /*pstmt.setString(2, scheduleDTO.getPeriodName());
-            pstmt.setString(3, scheduleDTO.getStartDate());
-            pstmt.setString(4, scheduleDTO.getEndDate());*/
-
+            String sql = "SELECT * FROM selection_schedule ORDER BY start_date";
+            pstmt = conn.prepareStatement(sql);
             rs = pstmt.executeQuery();
 
-            if (rs.next()) {
-                // ScheduleDTO scheduleDTO = new ScheduleDTO();
-                scheduleDTO = new ScheduleDTO();
-                //scheduleDTO.setScheduleId(rs.getInt("schedule_id"));
-                scheduleDTO.setPeriodName(rs.getString("period_name"));
-                scheduleDTO.setStartDate(rs.getString("start_date"));
-                scheduleDTO.setEndDate(rs.getString("end_date"));
+            while (rs.next()) {
+                ScheduleDTO schedule = new ScheduleDTO();
+                schedule.setScheduleId(rs.getInt("schedule_id"));
+                schedule.setPeriodName(rs.getString("period_name"));
+                schedule.setStartDate(rs.getTimestamp("start_date").toString());
+                schedule.setEndDate(rs.getTimestamp("end_date").toString());
+                schedules.add(schedule);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             closeResources(conn, pstmt, rs);
         }
+        return schedules;
+    }
 
-        return scheduleDTO;
+    // 선발 일정 등록
+    public boolean registerSchedule(ScheduleDTO schedule) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = ds.getConnection();
+            String sql = "INSERT INTO selection_schedule (period_name, start_date, end_date) VALUES (?, ?, ?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, schedule.getPeriodName());
+            pstmt.setString(2, schedule.getStartDate());
+            pstmt.setString(3, schedule.getEndDate());
+
+            int result = pstmt.executeUpdate();
+            return result > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            closeResources(conn, pstmt, null);
+        }
     }
 
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {

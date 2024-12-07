@@ -9,7 +9,10 @@ import java.sql.Timestamp;
 @Setter
 public class ScheduleDTO {
     private int scheduleId;
-    private String periodName;    // 기간 이름 (ex: "생활관 입사 신청", "결핵진단서 제출")
-    private String startDate;  // 시작일
-    private String endDate;    // 종료일
+    private String periodName;
+    private String startDate;  // YYYY-MM-DD
+    private String startHour;  // HH:mm:ss
+    private String endDate;    // YYYY-MM-DD
+    private String endHour;    // HH:mm:ss
+
 }

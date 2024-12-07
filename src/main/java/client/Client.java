@@ -7,8 +7,8 @@ import view.AdminViewer;
 
 import java.io.*;
 import java.net.Socket;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.nio.file.Files;
+import java.util.Base64;
 
 public class Client {
     private final String ip;
@@ -17,6 +17,8 @@ public class Client {
     private DataOutputStream out;
     private DataInputStream in;
     private BufferedReader br;
+    private static int loggedInUserId = -1;
+    private int studentId;
 
     Message txMsg = null;  // 전송용 메시지
     Message rxMsg = null;  // 수신용 메시지
@@ -25,8 +27,8 @@ public class Client {
     byte[] packet = null;
 
     // 날짜 형식 지정을 위한 포매터
-    private static final SimpleDateFormat dateFormat =
-            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//    private static final SimpleDateFormat dateFormat =
+//            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public Client(String ip, int port) {
         this.ip = ip;
@@ -44,15 +46,10 @@ public class Client {
 
     public void run() {
         try {
+            int id = -1; // 초기값만 선언하고 실제 사용은 나중에
             while (true) {
                 // 서버로부터 메시지 수신
-                rxMsg = new Message();
-                header = new byte[Packet.LEN_HEADER];
-                in.read(header);
-                Message.makeMessageHeader(rxMsg, header);
-                body = new byte[rxMsg.getLength()];
-                in.read(body);
-                Message.makeMessageBody(rxMsg, body);
+                Message rxMsg = Message.readMessage(in);
                 Message.printMessage(rxMsg);
 
                 byte type = rxMsg.getType();
@@ -60,7 +57,14 @@ public class Client {
                     case Packet.REQUEST:
                         System.out.println("서버가 로그인 정보 요청");
                         System.out.print("ID를 입력하세요: ");
-                        String id = br.readLine();
+                        String idInput = br.readLine();
+                        if (idInput == null || idInput.trim().isEmpty()) {
+                            System.out.println("올바른 ID를 입력해주세요.");
+                            continue; // 입력이 유효하지 않으면 다시 요청
+                        }
+
+                        id = Integer.parseInt(idInput);  // 이 시점에서만 parseInt 수행
+
                         System.out.print("비밀번호를 입력하세요: ");
                         String password = br.readLine();
 
@@ -75,17 +79,20 @@ public class Client {
                     case Packet.RESULT:
                         System.out.println("서버로부터 로그인 결과 수신");
                         if (rxMsg.getDetail() == Packet.SUCCESS) {
-                            if (rxMsg.getData().equals("학생")) {
+                            String data = rxMsg.getData();
+                            String[] parts = data.split(",");
+                            int userId = Integer.parseInt(parts[0]); // 사용자 ID 저장
+                            String userRole = parts[1];
+
+                            if (userRole.equals("학생")) {
+                                this.studentId = userId; // 클래스 멤버 변수에 저장
                                 studentRun();
-                            } else if (rxMsg.getData().equals("관리자")) {
+                            } else if (userRole.equals("관리자")) {
                                 adminRun();
-                            } else {
-                                System.out.println("에러: 알 수 없는 사용자 유형");
                             }
-                        } else {
-                            System.out.println("로그인 실패!");
                         }
-                        return;
+                        break;
+                       // return;
                 }
             }
         } catch (Exception e) {
@@ -124,11 +131,10 @@ public class Client {
                             String[] schedules = rxMsg.getData().split(";");
                             for (String schedule : schedules) {
                                 String[] parts = schedule.split(",");
-                                if (parts.length >= 3) {
+                                if (parts.length >= 5) {
                                     System.out.println("기간명: " + parts[0]);
-                                    SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                                    System.out.println("시작일: " + parts[1]);
-                                    System.out.println("종료일: " + parts[2]);
+                                    System.out.println("시작일: " + parts[1] + " " + parts[2]);
+                                    System.out.println("종료일: " + parts[3] + " " + parts[4]);
                                     System.out.println("---------------");
                                 }
                             }
@@ -143,7 +149,43 @@ public class Client {
 
                 case 4: // 1.4 기능
 
-                case 5: // 1.5 기능
+                case 5: // 결핵진단서 제출
+                    System.out.println("=== 결핵진단서 제출 ===");
+                    System.out.print("제출할 파일 경로 입력: ");
+                    String filePath = br.readLine();
+
+                    File file = new File(filePath);
+                    if (!file.exists()) {
+                        System.out.println("파일이 존재하지 않습니다.");
+                        break;
+                    }
+
+                    byte[] fileData = Files.readAllBytes(file.toPath());
+                    String fileName = file.getName();
+                    String fileType = fileName.substring(fileName.lastIndexOf(".") + 1);
+
+                    String certificateData = String.format("%d,%s,%s,%s",
+                            studentId, // 학생ID는 로그인 시 저장해둔 값 사용
+                            Base64.getEncoder().encodeToString(fileData), // 바이트 배열을 Base64로 인코딩
+                            fileName,
+                            fileType);
+
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.SUBMIT_CERTIFICATE,
+                            Packet.NOT_USED,
+                            certificateData);
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    // 서버 응답 수신 및 처리
+                    Message rxMsg = Message.readMessage(in);
+                    if (rxMsg.getDetail() == Packet.SUCCESS) {
+                        System.out.println("결핵진단서 제출 성공");
+                    } else {
+                        System.out.println("결핵진단서 제출 실패: " + rxMsg.getData());
+                    }
+                    break;
 
                 case 6: // 1.6 기능
 
@@ -207,7 +249,48 @@ public class Client {
 
                 case 6: // 1.6 기능
 
-                case 7: // 1.7 기능
+                case 7: // 결핵진단서 제출 확인
+                    System.out.println("=== 결핵진단서 제출 현황 ===");
+
+                    // 서버에 제출 현황 조회 요청
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.CHECK_CERTIFICATES,
+                            Packet.NOT_USED,
+                            "진단서 조회 요청");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    // 서버로부터 응답 수신
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    // 응답 처리
+                    if (rxMsg.getType() == Packet.RESULT) {
+                        if (rxMsg.getDetail() == Packet.SUCCESS) {
+                            String[] certificates = rxMsg.getData().split(";");
+                            if (certificates.length > 0) {
+                                for (String cert : certificates) {
+                                    String[] parts = cert.split(",");
+                                    if (parts.length >= 3) {
+                                        System.out.println("학생 ID: " + parts[0]);
+                                        System.out.println("제출일: " + parts[1]);
+                                        System.out.println("---------------");
+                                    }
+                                }
+                            } else {
+                                System.out.println("제출된 결핵진단서가 없습니다.");
+                            }
+                        } else {
+                            System.out.println("조회 실패: " + rxMsg.getData());
+                        }
+                    }
+                    break;
 
                 case 0: // 종료
                     return;

@@ -1,5 +1,5 @@
 // ScheduleService.java
-package Service;
+package service;
 
 import dao.ScheduleDAO;
 import dto.ScheduleDTO;
@@ -26,7 +26,9 @@ public class ScheduleService {
         for (ScheduleDTO schedule : schedules) {
             sb.append(schedule.getPeriodName()).append(",")
                     .append(schedule.getStartDate()).append(",")
-                    .append(schedule.getEndDate()).append(";");
+                    .append(schedule.getStartHour()).append(",")
+                    .append(schedule.getEndDate()).append(",")
+                    .append(schedule.getEndHour()).append(";");
         }
         return sb.substring(0, sb.length() -1);
     }

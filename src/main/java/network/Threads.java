@@ -1,15 +1,19 @@
 package network;
 
+import dto.*;
+import service.MealService;
+import service.RoomService;
+import service.ScheduleService;
+import service.TuberculosisService;
 import common.Packet;
-import Service.ScheduleService;
-import dto.ScheduleDTO;
-import dto.UserDTO;
 import dao.UserDAO;
+import dao.RoomDAO;
+
 import java.io.*;
 import java.net.Socket;
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Base64;
 import java.util.List;
 
 public class Threads extends Thread {
@@ -17,6 +21,9 @@ public class Threads extends Thread {
     private UserDTO userDTO;
     private UserDAO userDAO;
     private ScheduleService scheduleService;
+    private TuberculosisService tuberculosisService;
+    private RoomService roomService;
+    private MealService mealService;
     private DataInputStream in;
     private DataOutputStream out;
     byte[] header = null;
@@ -29,6 +36,9 @@ public class Threads extends Thread {
         this.socket = socket;
         this.userDAO = new UserDAO();
         this.scheduleService = new ScheduleService();
+        this.tuberculosisService = new TuberculosisService();
+        this.roomService = new RoomService();
+        this.mealService = new MealService();
     }
 
     public void run() {
@@ -53,16 +63,12 @@ public class Threads extends Thread {
                 Message.printMessage(rxMsg);
                 byte type = rxMsg.getType();
 
-                System.out.println("test" + type);
-
                 switch(type) {
                     case Packet.REQUEST:
                         byte code = rxMsg.getCode();
-                        System.out.println("코드 받음");
 
                         switch(code) {
                             case Packet.CHECK_SCHEDULE:
-                                System.out.println("스케줄 조회 시작");
                                 List<ScheduleDTO> schedules = scheduleService.getSchedules();
 
                                 if (!schedules.isEmpty()) {
@@ -82,6 +88,50 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
+                            case Packet.SUBMIT_CERTIFICATE: //결핵진단서 제출 확인
+                                String[] certParts = rxMsg.getData().split(",");
+                                int studentId = Integer.parseInt(certParts[0]);
+                                byte[] fileData = Base64.getDecoder().decode(certParts[1]);
+                                String fileName = certParts[2];
+                                String fileType = certParts[3];
+
+                                TuberculosisDTO cert = new TuberculosisDTO();
+                                cert.setStudentId(studentId);
+                                cert.setImageData(fileData);
+                                cert.setFileName(fileName);
+                                cert.setFileType(fileType);
+
+                                String submitResult = tuberculosisService.submitCertificate(cert);
+
+                                if (submitResult.equals("제출 성공")) {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.SUBMIT_CERTIFICATE,
+                                            Packet.SUCCESS,
+                                            submitResult);
+                                } else {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.SUBMIT_CERTIFICATE,
+                                            Packet.FAIL,
+                                            submitResult);
+                                }
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+                                break;
+
+                            case Packet.CHECK_CERTIFICATES:
+                                List<TuberculosisDTO> certificates = tuberculosisService.getCertificates();
+                                String certListData = tuberculosisService.formatCertificateList(certificates);
+
+                                txMsg = Message.makeMessage(Packet.RESULT,
+                                        Packet.CHECK_CERTIFICATES,
+                                        Packet.SUCCESS,
+                                        certListData);
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+                                break;
+
                             case Packet.REGISTER_SCHEDULE:
                                 // 관리자의 일정 등록 처리
                                 String scheduleData = rxMsg.getData();
@@ -92,15 +142,17 @@ public class Threads extends Thread {
                                         throw new IllegalArgumentException("잘못된 데이터 형식");
                                     }
 
-                                    // DTO 생성 및 설정
                                     ScheduleDTO newSchedule = new ScheduleDTO();
                                     newSchedule.setPeriodName(parts[0]);
 
-                                    // 문자열을 Timestamp로 변환
-                                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+// 날짜와 시간 분리
+                                    String[] startDateTime = parts[1].split(" ");
+                                    String[] endDateTime = parts[2].split(" ");
 
-                                    dateFormat.parse(parts[1]);
-                                    dateFormat.parse(parts[2]);
+                                    newSchedule.setStartDate(startDateTime[0]);
+                                    newSchedule.setStartHour(startDateTime[1]);
+                                    newSchedule.setEndDate(endDateTime[0]);
+                                    newSchedule.setEndHour(endDateTime[1]);
                                     // 서비스를 통해 일정 등록
                                     boolean success = scheduleService.registerSchedule(newSchedule);
 
@@ -118,13 +170,6 @@ public class Threads extends Thread {
                                         System.out.println("Schedule registration failed");
                                     }
 
-                                } catch (ParseException e) {
-                                    // 날짜 형식 파싱 실패
-                                    txMsg = Message.makeMessage(Packet.RESULT,
-                                            Packet.REGISTER_SCHEDULE,
-                                            Packet.FAIL,
-                                            "날짜 형식이 잘못되었습니다. (yyyy-MM-dd HH:mm:ss)");
-                                    System.err.println("Date parsing error: " + e.getMessage());
                                 } catch (IllegalArgumentException e) {
                                     // 데이터 형식 오류
                                     txMsg = Message.makeMessage(Packet.RESULT,
@@ -146,8 +191,68 @@ public class Threads extends Thread {
                                 out.write(packet);
                                 out.flush();
                                 break;
+                            case Packet.REGISTER_FEE:
+                                String feeData = rxMsg.getData();
+                                // feeData 파싱 (형식: dormitoryName,dormitoryUsageFee,dormitoryMealFee)
+                                String[] parts = feeData.split(",");
+                                // DTO 생성 및 설정
+                                // 1 : 푸름관 1동
+                                // 2 : 푸름관 2동
+                                // 3: 푸름관 3동
+                                // 4 : 푸름관 4동
+                                // 5 : 오름관 1동
+                                // 6 : 오름관 2동
+                                // 7 : 오름관 3동
+                                RoomDTO roomDTO = new RoomDTO();
+                                MealDTO mealDTO = new MealDTO();
+                                if(parts[0].equals("푸름관1동")){
+                                    roomDTO.setDormitoryId(1);
+                                    mealDTO.setDormitoryId(1);
+                                }else if(parts[0].equals("푸름관2동")){
+                                    roomDTO.setDormitoryId(2);
+                                    mealDTO.setDormitoryId(2);
+                                }else if(parts[0].equals("푸름관3동")){
+                                    roomDTO.setDormitoryId(3);
+                                    mealDTO.setDormitoryId(3);
+                                }else if(parts[0].equals("푸름관4동")){
+                                    roomDTO.setDormitoryId(4);
+                                    mealDTO.setDormitoryId(4);
+                                }else if(parts[0].equals("오름관1동")){
+                                    roomDTO.setDormitoryId(5);
+                                    mealDTO.setDormitoryId(5);
+                                }else if(parts[0].equals("오름관2동")){
+                                    roomDTO.setDormitoryId(6);
+                                    mealDTO.setDormitoryId(6);
+                                }else if(parts[0].equals("오름관3동")){
+                                    roomDTO.setDormitoryId(7);
+                                    mealDTO.setDormitoryId(7);
+                                }
+
+                                roomDTO.setFee(Integer.parseInt(parts[1]));
+                                mealDTO.setFee(Integer.parseInt(parts[2]));
+                                boolean roomSuccess = roomService.registerRoom(roomDTO);
+                                boolean mealSuccess = mealService.registerMeal(mealDTO);
+                                if (roomSuccess & mealSuccess) {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.REGISTER_FEE,
+                                            Packet.SUCCESS,
+                                            "생활관 사용료 및 급식비 등록이 완료되었습니다.");
+                                    System.out.println("Schedule registered successfully: ");
+                                } else {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.REGISTER_FEE,
+                                            Packet.FAIL,
+                                            "생활관 사용료 및 급식비 등록에 실패했습니다.");
+                                    System.out.println("Schedule registration failed");
+                                }
+                                // 결과 전송
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+                                break;
                         }
                         break;
+
 
                     case Packet.RESPONSE:
                         System.out.println("로그인 응답 정보 도착");
@@ -162,8 +267,9 @@ public class Threads extends Thread {
                                     String.valueOf(user.getPassword()).equals(password);
 
                             if(loginSuccess) {
+                                String responseData = user.getId() + "," +user.getRole();
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
-                                        Packet.SUCCESS, user.getRole());
+                                        Packet.SUCCESS, responseData);
                                 System.out.println("User " + id + " logged in successfully");
                             } else {
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,

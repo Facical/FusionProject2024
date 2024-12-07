@@ -27,8 +27,10 @@ public class ScheduleDAO {
                 ScheduleDTO schedule = new ScheduleDTO();
                 schedule.setScheduleId(rs.getInt("schedule_id"));
                 schedule.setPeriodName(rs.getString("period_name"));
-                schedule.setStartDate(rs.getTimestamp("start_date").toString());
-                schedule.setEndDate(rs.getTimestamp("end_date").toString());
+                schedule.setStartDate(rs.getString("start_date"));
+                schedule.setStartHour(rs.getString("start_hour"));
+                schedule.setEndDate(rs.getString("end_date"));
+                schedule.setEndHour(rs.getString("end_hour"));
                 schedules.add(schedule);
             }
         } catch (SQLException e) {
@@ -46,11 +48,13 @@ public class ScheduleDAO {
 
         try {
             conn = ds.getConnection();
-            String sql = "INSERT INTO selection_schedule (period_name, start_date, end_date) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO selection_schedule (period_name, start_date, start_hour, end_date, end_hour) VALUES (?, ?, ?, ?, ?)";
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, schedule.getPeriodName());
             pstmt.setString(2, schedule.getStartDate());
-            pstmt.setString(3, schedule.getEndDate());
+            pstmt.setString(3, schedule.getStartHour());
+            pstmt.setString(4, schedule.getEndDate());
+            pstmt.setString(5, schedule.getEndHour());
 
             int result = pstmt.executeUpdate();
             return result > 0;

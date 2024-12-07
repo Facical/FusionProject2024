@@ -37,7 +37,7 @@ public class Threads extends Thread {
             out = new DataOutputStream(socket.getOutputStream());
 
             // 초기 로그인 요청 메시지 전송
-            txMsg = Message.makeMessage(Packet.REQUEST, Packet.Login, Packet.NOT_USED, "Login Request");
+            txMsg = Message.makeMessage(Packet.REQUEST, Packet.LOGIN, Packet.NOT_USED, "Login Request");
             packet = Packet.makePacket(txMsg);
             out.write(packet);
             out.flush();
@@ -89,7 +89,7 @@ public class Threads extends Thread {
                     case Packet.RESPONSE:
                         System.out.println("로그인 응답 정보 도착");
                         String data = rxMsg.getData();
-                        if(data != null && !data.isEmpty()) {
+                        if (data != null && !data.isEmpty()) {
                             String[] parts = data.split(",");
                             String id = parts[0];
                             String password = parts[1];
@@ -99,16 +99,19 @@ public class Threads extends Thread {
                                     String.valueOf(user.getPassword()).equals(password);
 
 
-                            if(loginSuccess) {
-                                txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
+                            if (loginSuccess) {
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.SUCCESS, user.getRole());
 
                                 System.out.println("User " + id + " logged in successfully");
-                            } else {
-                                txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
+                            }
+
+                            else {
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.FAIL, "Login Failed");
                                 System.out.println("Login failed for user " + id);
                             }
+
                             packet = Packet.makePacket(txMsg);
                             out.write(packet);
                             out.flush();

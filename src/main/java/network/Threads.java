@@ -1,10 +1,7 @@
 package network;
 
 import dto.*;
-import service.MealService;
-import service.RoomService;
-import service.ScheduleService;
-import service.TuberculosisService;
+import service.*;
 import common.Packet;
 import dao.UserDAO;
 import dao.RoomDAO;
@@ -88,6 +85,26 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
+                            case Packet.PROCESS_WITHDRAWAL: // 퇴사 신청자 조회 및 환불
+                                System.out.println("퇴사 신청자 조회 시작");
+                                WithdrawService withdrawService = new WithdrawService();
+                                String withdrawData = withdrawService.getWithdrawAndRefundData();
+
+                                if (!withdrawData.isEmpty()) {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.PROCESS_WITHDRAWAL,
+                                            Packet.SUCCESS,
+                                            withdrawData);
+                                } else {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.PROCESS_WITHDRAWAL,
+                                            Packet.FAIL,
+                                            "퇴사 신청자가 없습니다.");
+                                }
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+                                break;
                             case Packet.SUBMIT_CERTIFICATE: //결핵진단서 제출 확인
                                 String[] certParts = rxMsg.getData().split(",");
                                 int studentId = Integer.parseInt(certParts[0]);

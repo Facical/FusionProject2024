@@ -291,6 +291,43 @@ public class Client {
                         }
                     }
                     break;
+                case 8: // 퇴사 신청자 조회 및 환불
+                    System.out.println("=== 퇴사 신청자 조회 및 환불 ===");
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.PROCESS_WITHDRAWAL,
+                            Packet.NOT_USED,
+                            "퇴사 신청자 조회 요청");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    // 서버로부터 응답 수신
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    // 응답 처리
+                    if (rxMsg.getType() == Packet.RESULT) {
+                        if (rxMsg.getDetail() == Packet.SUCCESS) {
+                            String[] withdraws = rxMsg.getData().split(";");
+                            for (String withdraw : withdraws) {
+                                String[] parts = withdraw.split(",");
+                                System.out.println("학생 ID: " + parts[0]);
+                                System.out.println("퇴사일: " + parts[1]);
+                                System.out.println("은행명: " + parts[2]);
+                                System.out.println("계좌번호: " + parts[3]);
+                                System.out.println("환불금액: " + parts[4]);
+                                System.out.println("---------------");
+                            }
+                        } else {
+                            System.out.println(rxMsg.getData());
+                        }
+                    }
+                    break;
 
                 case 0: // 종료
                     return;

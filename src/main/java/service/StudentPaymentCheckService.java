@@ -1,10 +1,10 @@
 package service;
 
 import dto.StudentPaymentDTO;
-import dto.TuberculosisDTO;
+
 
 import java.util.List;
-
+//dddddㅇㅇ
 public class StudentPaymentCheckService {
 
     public static String ListToString(List<StudentPaymentDTO> studentPaymentDTOList)

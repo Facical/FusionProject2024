@@ -6,6 +6,7 @@ import dto.WithdrawDTO;
 import dto.RefundDTO;
 import java.util.List;
 
+//dddㅇㅇ
 public class WithdrawService {
     private final WithdrawDAO withdrawDAO = new WithdrawDAO();
     private final RefundDAO refundDAO = new RefundDAO();
@@ -28,6 +29,6 @@ public class WithdrawService {
                     .append(totalRefund).append(";");
         }
 
-        return sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
+        return sb.length() > 0 ? sb.substring(0, sb.length() - 1) : " ";
     }
 }

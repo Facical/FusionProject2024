@@ -2,6 +2,8 @@ package server;
 
 //import network.Threads;
 
+import network.Threads;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -20,8 +22,8 @@ public class Server {
                 socket = serverSocket.accept();
                 System.out.println("New client connected: " + socket.getInetAddress());
 
-//                Threads thread = new Threads(socket);
-//                thread.start();
+                Threads thread = new Threads(socket);
+                thread.start();
             }
         } catch (IOException e) {
             System.err.println("Server error: " + e.getMessage());

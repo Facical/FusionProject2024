@@ -67,7 +67,7 @@ public class Client {
                         String password = br.readLine();
 
                         String newData = id + "," + password;
-                        txMsg = Message.makeMessage(Packet.RESPONSE, Packet.Login,
+                        txMsg = Message.makeMessage(Packet.RESPONSE, Packet.LOGIN,
                                 Packet.NOT_USED, newData);
                         packet = Packet.makePacket(txMsg);
                         out.write(packet);

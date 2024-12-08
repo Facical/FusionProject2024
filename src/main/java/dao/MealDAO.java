@@ -1,6 +1,7 @@
 package dao;
 
 import dto.MealDTO;
+import dto.ScheduleDTO;
 
 import javax.sql.DataSource;
 import java.sql.Connection;

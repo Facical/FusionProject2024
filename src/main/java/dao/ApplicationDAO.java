@@ -1,11 +1,23 @@
 package dao;
 
+import dto.*;
+
 import dto.ApplicationDTO;
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.*;
 
 public class ApplicationDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        ApplicationDTO applicationDTO = null;
+
 
     public ApplicationDTO getApplicationInfo(int studentID){
         /*
@@ -66,6 +78,57 @@ public class ApplicationDAO {
         } finally {
             closeResources(conn, pstmt);
         }
+
+    }
+
+    public int findApplicationId(int studentId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        ApplicationDTO applicationDTO = null;
+
+        try {
+            conn = ds.getConnection();
+            String sql = "SELECT application_id FROM application WHERE student_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, studentId);
+
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                applicationDTO = new ApplicationDTO();
+                applicationDTO.setApplicationId(rs.getInt("application_id"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources(conn, pstmt, rs);
+        }
+        return applicationDTO.getApplicationId();
+    }
+
+    public boolean applyAdmission(ApplicationDTO applicationDTO) {  // boolean 대신 int 반환
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = ds.getConnection();
+            // room_number,room_type, capacity, 일단 제외
+            String sql = "INSERT INTO application (student_id,application_date) VALUES (?, ?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, applicationDTO.getStudentId());
+            pstmt.setString(2, applicationDTO.getApplicationDate());
+
+
+            int result = pstmt.executeUpdate();
+            return result > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            closeResources(conn, pstmt, null);
+        }
+
 
     }
 

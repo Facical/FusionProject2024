@@ -1,12 +1,11 @@
 package network;
 
+import dao.*;
 import dto.*;
 import service.*;
 import common.Packet;
-import dao.UserDAO;
-import dao.RoomDAO;
-import dao.*;
-import dto.*;
+
+
 
 
 import java.io.*;
@@ -16,6 +15,9 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.time.LocalDate;
 import java.time.Period;
@@ -26,6 +28,7 @@ public class Threads extends Thread {
     private Socket socket;
     private UserDTO userDTO;
     private UserDAO userDAO;
+
     private ScheduleDAO scheduleDAO;
     private ScheduleDTO scheduleDTO;
     private WithdrawDAO withdrawDAO;
@@ -35,9 +38,13 @@ public class Threads extends Thread {
     private RoomDAO roomDAO;
     private MealDAO mealDAO;
     private ScheduleService scheduleService;
-    private TuberculosisService tuberculosisService;
     private RoomService roomService;
     private MealService mealService;
+    private ApplicationService applicationService;
+    private ApplicationPreferenceService applicationPreferenceService;
+    private StudentService studentService;
+    private AdmissionService admissionService;
+    private TuberculosisService tuberculosisService;
     private DataInputStream in;
     private DataOutputStream out;
     byte[] header = null;
@@ -45,7 +52,7 @@ public class Threads extends Thread {
     byte[] packet = null;
     Message txMsg = null;
     Message rxMsg = null;
-
+    private static int loggedInUserId = -1;
     public Threads(Socket socket) {
         this.socket = socket;
         this.userDAO = new UserDAO();
@@ -60,6 +67,12 @@ public class Threads extends Thread {
         this.applicationDAO = new ApplicationDAO();
         this.roomDAO = new RoomDAO();
         this.mealDAO = new MealDAO();
+        this.roomService = new RoomService();
+        this.mealService = new MealService();
+        this.applicationService = new ApplicationService();
+        this.applicationPreferenceService = new ApplicationPreferenceService();
+        this.studentService = new StudentService();
+        this.admissionService = new AdmissionService();
     }
 
     public void run() {
@@ -325,8 +338,10 @@ public class Threads extends Thread {
                                 break;
 
                             case Packet.REGISTER_SCHEDULE:
+                                // 관리자의 일정 등록 처리
                                 String scheduleData = rxMsg.getData();
                                 try {
+                                    // scheduleData 파싱 (형식: periodName,startDate,endDate)
                                     String[] parts = scheduleData.split(",");
                                     if (parts.length != 3) {
                                         throw new IllegalArgumentException("잘못된 데이터 형식");
@@ -335,6 +350,7 @@ public class Threads extends Thread {
                                     ScheduleDTO newSchedule = new ScheduleDTO();
                                     newSchedule.setPeriodName(parts[0]);
 
+// 날짜와 시간 분리
                                     String[] startDateTime = parts[1].split(" ");
                                     String[] endDateTime = parts[2].split(" ");
 
@@ -342,7 +358,7 @@ public class Threads extends Thread {
                                     newSchedule.setStartHour(startDateTime[1]);
                                     newSchedule.setEndDate(endDateTime[0]);
                                     newSchedule.setEndHour(endDateTime[1]);
-
+                                    // 서비스를 통해 일정 등록
                                     boolean success = scheduleService.registerSchedule(newSchedule);
 
                                     if (success) {
@@ -439,7 +455,7 @@ public class Threads extends Thread {
                             String[] parts = data.split(",");
                             String id = parts[0];
                             String password = parts[1];
-
+                            loggedInUserId = Integer.parseInt(id);
                             UserDTO user = userDAO.findUser(Integer.parseInt(id));
                             boolean loginSuccess = (user != null) &&
                                     String.valueOf(user.getPassword()).equals(password);

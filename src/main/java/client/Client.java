@@ -84,6 +84,7 @@ public class Client {
 
                             if (userRole.equals("학생")) {
                                 this.studentId = userId;
+                                loggedInUserId = userId;
                                 studentRun();
                             } else if (userRole.equals("관리자")) {
                                 adminRun();
@@ -130,6 +131,69 @@ public class Client {
                         }
                     }
                     break;
+                case 2: // 1.2 기능
+                    System.out.println("=== 입사 신청 ===");
+                    System.out.println("1지망 생활관 입력");
+                    String firstDormitory = br.readLine();
+                    System.out.println("1지망 생활관의 식사 입력 (5일식, 7일식) : ");
+                    String firstDormitoryMeal = br.readLine();
+                    System.out.println("2지망 생활관 입력");
+                    String secondDormitory = br.readLine();
+                    System.out.println("2지망 생활관의 식사 입력 (5일식, 7일식) : ");
+                    String secondDormitoryMeal = br.readLine();
+
+                    String newData = firstDormitory + "," + firstDormitoryMeal + "," + secondDormitory + "," + secondDormitoryMeal;
+                    txMsg = Message.makeMessage(Packet.REQUEST, Packet.APPLY_ADMISSION,
+                            Packet.NOT_USED, newData);
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    if (rxMsg.getType() == Packet.RESULT){
+                        System.out.println("입사 신청 성공!");
+                    }else{
+                        System.out.println("입사 신청 실패");
+                    }
+                    break;
+                case 3: // 1.3 기능
+                    //합격 여부 및 호실 확인
+                    txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_ADMISSION,
+                            Packet.NOT_USED, "합격 여부 및 호실 확인 조회 요청");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    String data = rxMsg.getData();
+                    String[] parts = data.split(",");
+
+                    String roomId = parts[0];
+                    String status = parts[1];
+
+                    if (rxMsg.getType() == Packet.RESULT){
+                        System.out.println("합격 여부 : " + status);
+                        System.out.println("호실 확인 : " + roomId);
+                    }else{
+                        System.out.println("합격 여부 및 호실 확인 실패");
+                    }
+                    return;
+
+
                 case 4: //생활관 비용 확인 및 납부
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_PAY_DORMITORY, Packet.NOT_USED, "")));
                     out.flush();
@@ -140,9 +204,9 @@ public class Client {
                     byte type = rxMsg.getType();
                     byte detail = rxMsg.getDetail();
                     if (type == Packet.RESPONSE && detail == Packet.SUCCESS) {
-                        String data = rxMsg.getData();
+                        data = rxMsg.getData();
                         if (data != null && !data.isEmpty()) {
-                            String[] parts = data.split(",");
+                            parts = data.split(",");
                             String roomFee = parts[0];
                             String mealFee = parts[1];
                             String totalFee = parts[2];
@@ -222,7 +286,7 @@ public class Client {
                     System.out.print("퇴사 신청 사유: ");
                     String reason = sc.nextLine();
 
-                    String newData = bankName + "," + accountNumber + "," + reason;
+                    newData = bankName + "," + accountNumber + "," + reason;
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.REQUEST_WITHDRAWAL, Packet.NOT_USED, newData)));
                     out.flush();
 
@@ -296,6 +360,44 @@ public class Client {
                         System.out.println("일정 등록 실패: " + rxMsg.getData());
                     }
                     break;
+                case 2: // 1.2 기능
+                    System.out.println("=== 생활관 사용료 및 급식비 등록 ===");
+                    System.out.println("생활관 입력 :");
+                    String dormitoryName = br.readLine();
+                    System.out.println("생활관 사용료 입력 :");
+                    String dormitoryUsageFee = br.readLine();
+                    System.out.println("생활관 급식비 등록 :");
+                    String dormitoryMealFee = br.readLine();
+                    String newData = dormitoryName + "," + dormitoryUsageFee + "," + dormitoryMealFee;
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.REGISTER_FEE,
+                            Packet.NOT_USED, newData);
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    if (rxMsg.getDetail() == Packet.SUCCESS) {
+                        System.out.println("생활관 사용료 및 급식비 등록 성공!");
+                    } else {
+                        System.out.println("생활관 사용료 및 급식비 등록 실패: " + rxMsg.getData());
+                    }
+                    break;
+
+                case 3: // 1.3 기능
+
+                case 4: // 1.4 기능
+
+                case 5: // 1.5 기능
+
+                case 6: // 1.6 기능
 
                 case 7:
                     System.out.println("=== 결핵진단서 제출 현황 ===");

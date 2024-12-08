@@ -35,7 +35,6 @@ public class Packet{
     public static final byte VIEW_UNPAID_STUDENTS = 13;    // 생활관 비용 미납부자 조회
     public static final byte CHECK_CERTIFICATES = 14;      // 결핵진단서 제출 확인
     public static final byte PROCESS_WITHDRAWAL = 15;      // 퇴사 신청자 조회 및 환불
-    public static final byte DOWNLOAD_CERTIFICATES = 16;  // 결핵진단서 다운로드
 
     // Protocol Detail
     public static final byte NOT_USED = 0;

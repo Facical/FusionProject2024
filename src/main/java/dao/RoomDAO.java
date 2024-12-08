@@ -1,5 +1,6 @@
 package dao;
 
+import dto.MealDTO;
 import dto.RoomDTO;
 
 import javax.sql.DataSource;

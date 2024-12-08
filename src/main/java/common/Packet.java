@@ -16,8 +16,9 @@ public class Packet{
     public static final byte RESPONSE = 2;
     public static final byte RESULT = 3;
 
-    // Protocol Code
-    public static final byte Login = 0;
+    // 기능 모음
+    // 학생 기능
+    public static final byte LOGIN = 0;
     public static final byte CHECK_SCHEDULE = 1;           // 선발 일정 및 비용 확인
     public static final byte APPLY_ADMISSION = 2;          // 입사 신청
     public static final byte CHECK_ADMISSION = 3;          // 합격 여부 및 호실 확인
@@ -34,7 +35,7 @@ public class Packet{
     public static final byte VIEW_PAID_STUDENTS = 12;      // 생활관 비용 납부자 조회
     public static final byte VIEW_UNPAID_STUDENTS = 13;    // 생활관 비용 미납부자 조회
     public static final byte CHECK_CERTIFICATES = 14;      // 결핵진단서 제출 확인
-    public static final byte PROCESS_WITHDRAWAL = 15;      // 퇴사 신청자 조회 및 환불
+    public static final byte PROCESS_WITHDRAWAL = 15;     // 퇴사 신청자 조회 및 환불
 
     // Protocol Detail
     public static final byte NOT_USED = 0;

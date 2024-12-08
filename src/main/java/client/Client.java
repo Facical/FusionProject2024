@@ -67,7 +67,7 @@ public class Client {
                         String password = br.readLine();
 
                         String newData = id + "," + password;
-                        txMsg = Message.makeMessage(Packet.RESPONSE, Packet.Login,
+                        txMsg = Message.makeMessage(Packet.RESPONSE, Packet.LOGIN,
                                 Packet.NOT_USED, newData);
                         packet = Packet.makePacket(txMsg);
                         out.write(packet);
@@ -285,12 +285,12 @@ public class Client {
                     System.out.println("퇴사 신청 메뉴 입니다.");
                     System.out.println("환불 받으실 은행 이름, 계좌 번호, 퇴사 신청 사유를 입력해주세요.");
                     System.out.print("환불 받으실 은행 이름: ");
-                    sc.nextLine();
-                    String bankName = sc.nextLine();
+                    //sc.nextLine();
+                    String bankName = br.readLine();
                     System.out.print("계좌 번호: ");
-                    String accountNumber = sc.nextLine();
+                    String accountNumber = br.readLine();
                     System.out.print("퇴사 신청 사유: ");
-                    String reason = sc.nextLine();
+                    String reason = br.readLine();
 
                     newData = bankName + "," + accountNumber + "," + reason;
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.REQUEST_WITHDRAWAL, Packet.NOT_USED, newData)));
@@ -366,7 +366,7 @@ public class Client {
                         System.out.println("일정 등록 실패: " + rxMsg.getData());
                     }
                     break;
-                case 2: // 1.2 기능
+                case 2: // 2.2 기능
                     System.out.println("=== 생활관 사용료 및 급식비 등록 ===");
                     System.out.println("생활관 입력 :");
                     String dormitoryName = br.readLine();
@@ -397,13 +397,75 @@ public class Client {
                     }
                     break;
 
-                case 3: // 1.3 기능
+                case 3: // 2.3 기능
+                    System.out.println("=== 입사 신청자 조회 ===");
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.VIEW_APPLICANTS,
+                            Packet.NOT_USED,
+                            "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
 
-                case 4: // 1.4 기능
+                    // 서버가 보내준 패킷 받아서 해석
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+                    System.out.println(rxMsg.getData());
 
-                case 5: // 1.5 기능
+                    break;
+                case 4: // 2.4 기능
+                    break;
 
-                case 6: // 1.6 기능
+                case 5: // 2.5 기능
+                    System.out.println("=== 생활관 비용 납부자 조회 ===");
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.VIEW_PAID_STUDENTS,
+                            Packet.NOT_USED,
+                            "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+                    // 위에 까지가 조회 요청
+
+                    // 조회 요청해서 서버가 DB 조회해서 뿌려주는 것
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    System.out.println(rxMsg.getData());
+                    break;
+
+                case 6: // 2.6 생활관 비용 미납부자 조회 기능
+                    System.out.println("=== 생활관 비용 미납부자 조회 ===");
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.VIEW_UNPAID_STUDENTS,
+                            Packet.NOT_USED,
+                            "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+                    // 위에 까지가 조회 요청
+
+                    // 조회 요청해서 서버가 DB 조회해서 뿌려주는 것
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    System.out.println(rxMsg.getData());
+                    break;
 
                 case 7:
                     System.out.println("=== 결핵진단서 제출 현황 ===");

@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLOutput;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
@@ -28,12 +29,16 @@ public class Threads extends Thread {
 
     private ScheduleDAO scheduleDAO;
     private ScheduleDTO scheduleDTO;
+
     private WithdrawDAO withdrawDAO;
     private AdmissionDAO admissionDAO;
     private ApplicationPreferenceDAO applicationPreferenceDAO;
     private ApplicationDAO applicationDAO;
     private RoomDAO roomDAO;
     private MealDAO mealDAO;
+    private ApplicantInfoDAO applicantInfoDAO;
+    private ApplicantInfoDTO applicantInfoDTO;
+
     private ScheduleService scheduleService;
     private RoomService roomService;
     private MealService mealService;
@@ -42,6 +47,10 @@ public class Threads extends Thread {
     private StudentService studentService;
     private AdmissionService admissionService;
     private TuberculosisService tuberculosisService;
+
+    private StudentPaymentDAO studentPaymentDAO;
+    private StudentPaymentDTO studentPaymentDTO;
+
     private DataInputStream in;
     private DataOutputStream out;
     byte[] header = null;
@@ -68,6 +77,10 @@ public class Threads extends Thread {
         this.applicationPreferenceService = new ApplicationPreferenceService();
         this.studentService = new StudentService();
         this.admissionService = new AdmissionService();
+        this.studentPaymentDAO = new StudentPaymentDAO();
+        this.studentPaymentDTO = new StudentPaymentDTO();
+        this.applicantInfoDAO = new ApplicantInfoDAO();
+        this.applicantInfoDTO = new ApplicantInfoDTO();
     }
 
     public void run() {
@@ -77,7 +90,7 @@ public class Threads extends Thread {
             out = new DataOutputStream(socket.getOutputStream());
 
             //나중에 지우기
-            txMsg = Message.makeMessage(Packet.REQUEST, Packet.Login, Packet.NOT_USED, "Login Request");
+            txMsg = Message.makeMessage(Packet.REQUEST, Packet.LOGIN, Packet.NOT_USED, "Login Request");
             packet = Packet.makePacket(txMsg);
             out.write(packet);
             out.flush();
@@ -118,12 +131,15 @@ public class Threads extends Thread {
                             case Packet.CHECK_PAY_DORMITORY:
                                 ApplicationDTO applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
-                                ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+                                //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
-                                if(admissionDTO == null){
+                                ApplicationPreferenceDTO applicationPreferenceDTO;
+                                if (admissionDTO == null) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "합격 대상자가 아닙니다.")));
                                     out.flush();
-                                }else {
+                                } else {
+                                    applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId(),admissionDTO.getDormitoryId());
+
                                     RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
                                     MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
                                     int totalFee = roomDTO.getFee() + mealDTO.getFee();
@@ -156,6 +172,56 @@ public class Threads extends Thread {
                                 }
                                 break;
 
+                            case Packet.APPLY_ADMISSION:
+                                String admissionData = rxMsg.getData();
+                                String[] admissionParts = admissionData.split(",");
+                                //firstDormitory + "," + firstDormitoryMeal + "," + secondDormitory + "," + secondDormitoryMeal;
+                                applicationDTO = new ApplicationDTO();
+                                applicationPreferenceDTO = new ApplicationPreferenceDTO();
+
+                                applicationDTO.setStudentId(loggedInUserId);
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                                applicationDTO.setApplicationDate(LocalDate.now().format(formatter));
+                                boolean applicationSuccess = applicationService.applyAdmission(applicationDTO);
+
+                                int applicationId = applicationService.findApplicationId(loggedInUserId);
+                                applicationPreferenceDTO.setApplication_id(applicationId);
+                                applicationPreferenceDTO.setDormitory_id(mapDormitoryToId(admissionParts[0]));
+                                applicationPreferenceDTO.setPreference_order(1); // 1지망
+
+
+                                applicationPreferenceDTO.setMeal_id(mapMealId(admissionParts[0], admissionParts[1]));
+
+
+                                boolean preferenceSuccess1 = applicationPreferenceService.applyPreference(applicationPreferenceDTO);
+
+
+                                applicationPreferenceDTO.setDormitory_id(mapDormitoryToId(admissionParts[2]));
+                                applicationPreferenceDTO.setPreference_order(2); // 2지망
+
+
+                                applicationPreferenceDTO.setMeal_id(mapMealId(admissionParts[2], admissionParts[3]));
+
+                                boolean preferenceSuccess2 = applicationPreferenceService.applyPreference(applicationPreferenceDTO);
+
+
+                                if (applicationSuccess && preferenceSuccess1 && preferenceSuccess2) {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.APPLY_ADMISSION,
+                                            Packet.SUCCESS,
+                                            "입사 신청이 완료되었습니다.");
+                                    System.out.println("Admission apply successfully: ");
+                                } else {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.APPLY_ADMISSION,
+                                            Packet.FAIL,
+                                            "입사 신청에 실패했습니다.");
+                                    System.out.println("Admission apply failed");
+                                }
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+                                break;
 
                             case Packet.PROCESS_WITHDRAWAL:
                                 System.out.println("퇴사 신청자 조회 시작");
@@ -232,12 +298,14 @@ public class Threads extends Thread {
                                 LocalDate now = LocalDate.now();
                                 applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 admissionDTO = admissionDAO.findAdmission(studentID);
-                                applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+                                //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
-                                if(admissionDTO == null){
+                                if (admissionDTO == null) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));
                                     out.flush();
-                                }else {
+                                } else {
+                                    applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId(),admissionDTO.getDormitoryId());
+
                                     WithdrawDTO withdraw = new WithdrawDTO();
                                     String data = rxMsg.getData();
 
@@ -254,12 +322,11 @@ public class Threads extends Thread {
                                     MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
                                     int totalFee = roomDTO.getFee() + mealDTO.getFee();
 
-                                    if(now.isBefore(admissionDTO.getResidenceStartDate())){
+                                    if (now.isBefore(admissionDTO.getResidenceStartDate())) {
                                         withdraw.setWithdrawalType("입사 전");
                                         //환불 금액
                                         withdraw.setRefundAmount(totalFee);
-                                    }
-                                    else{
+                                    } else {
                                         Period remainPeriod = Period.between(now, admissionDTO.getResidenceEndDate());
                                         Period totalPeriod = Period.between(admissionDTO.getResidenceStartDate(), admissionDTO.getResidenceEndDate());
                                         withdraw.setWithdrawalType("입사 후");
@@ -290,10 +357,10 @@ public class Threads extends Thread {
                                 WithdrawDTO withdraw;
                                 withdraw = withdrawDAO.getWithdrawInfo(studentID);
 
-                                if(withdraw == null){
+                                if (withdraw == null) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.FAIL, "환불 신청을 하지 않았거나 대상자가 아닙니다.")));
                                     out.flush();
-                                }else{
+                                } else {
                                     String newData = withdraw.getWithdrawalStatus();
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.SUCCESS, newData)));
                                     out.flush();
@@ -447,25 +514,25 @@ public class Threads extends Thread {
                                 RoomDTO roomDTO = new RoomDTO();
                                 MealDTO mealDTO = new MealDTO();
 
-                                if(parts[0].equals("푸름관1동")){
+                                if (parts[0].equals("푸름관1동")) {
                                     roomDTO.setDormitoryId(1);
                                     mealDTO.setDormitoryId(1);
-                                }else if(parts[0].equals("푸름관2동")){
+                                } else if (parts[0].equals("푸름관2동")) {
                                     roomDTO.setDormitoryId(2);
                                     mealDTO.setDormitoryId(2);
-                                }else if(parts[0].equals("푸름관3동")){
+                                } else if (parts[0].equals("푸름관3동")) {
                                     roomDTO.setDormitoryId(3);
                                     mealDTO.setDormitoryId(3);
-                                }else if(parts[0].equals("푸름관4동")){
+                                } else if (parts[0].equals("푸름관4동")) {
                                     roomDTO.setDormitoryId(4);
                                     mealDTO.setDormitoryId(4);
-                                }else if(parts[0].equals("오름관1동")){
+                                } else if (parts[0].equals("오름관1동")) {
                                     roomDTO.setDormitoryId(5);
                                     mealDTO.setDormitoryId(5);
-                                }else if(parts[0].equals("오름관2동")){
+                                } else if (parts[0].equals("오름관2동")) {
                                     roomDTO.setDormitoryId(6);
                                     mealDTO.setDormitoryId(6);
-                                }else if(parts[0].equals("오름관3동")){
+                                } else if (parts[0].equals("오름관3동")) {
                                     roomDTO.setDormitoryId(7);
                                     mealDTO.setDormitoryId(7);
                                 }
@@ -475,7 +542,7 @@ public class Threads extends Thread {
                                 boolean roomSuccess = roomService.registerRoom(roomDTO);
                                 boolean mealSuccess = mealService.registerMeal(mealDTO);
 
-                                if (roomSuccess & mealSuccess) {
+                                if (roomSuccess && mealSuccess) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_FEE,
                                             Packet.SUCCESS,
@@ -492,9 +559,71 @@ public class Threads extends Thread {
                                 out.write(packet);
                                 out.flush();
                                 break;
+
+                            // 입사 신청자 조회
+                            case Packet.VIEW_APPLICANTS :
+                                List<ApplicantInfoDTO> applicantList = applicantInfoDAO.getApplicantDormitoryInfo();
+                                String applicantInfo = ApplicantViewService.ListToString(applicantList);
+
+                                if (applicantList.isEmpty() || applicantInfo == null) {
+                                    System.out.println("리스트 비어있음");
+                                }
+
+                                // 메시지로 작성 후 패킷화 해줌
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_APPLICANTS,
+                                        Packet.SUCCESS, applicantInfo);
+                                packet = Packet.makePacket(txMsg);
+
+                                // 스트림 통해서 보내줌
+                                out.write(packet);
+                                out.flush();
+                                break;
+
+
+
+                                // 2.5 생활관 비용 납부자 조회 기능
+                            case Packet.VIEW_PAID_STUDENTS :
+                                // 요청 받음
+                                List<StudentPaymentDTO> paidStudentList = studentPaymentDAO.getPaidStudentList();
+                                String paidList = StudentPaymentCheckService.ListToString(paidStudentList);
+                                System.out.println(paidList + "test");
+
+                                if (paidStudentList.isEmpty())
+                                    System.out.println("질의 똑바로 ㄴㄴ");
+
+                                // 메시지로 작성 후 패킷화 해줌
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_PAID_STUDENTS,
+                                        Packet.SUCCESS, paidList);
+                                packet = Packet.makePacket(txMsg);
+
+                                // 스트림 통해서 보내줌
+                                out.write(packet);
+                                out.flush();
+                                break;
+
+                            // 2.6 생활관 비용 미납부자 조회 기능
+                            case Packet.VIEW_UNPAID_STUDENTS :
+                                // 요청 받음
+                                List<StudentPaymentDTO> unpaidStudentList = studentPaymentDAO.getUnpaidStudentList();
+                                String unpaidList = StudentPaymentCheckService.ListToString(unpaidStudentList);
+
+                                if (unpaidStudentList.isEmpty())
+                                    System.out.println("질의 똑바로 ㄴㄴ");
+                                System.out.println(unpaidList + "test");
+                                // 메시지로 작성 후 패킷화 해줌
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_UNPAID_STUDENTS,
+                                        Packet.SUCCESS, unpaidList);
+                                packet = Packet.makePacket(txMsg);
+
+                                // 스트림 통해서 보내줌
+                                out.write(packet);
+                                out.flush();
+                                break;
+
                         }
                         break;
 
+                        // TYPE = 0x02
                     case Packet.RESPONSE:
                         System.out.println("로그인 응답 정보 도착");
                         String data = rxMsg.getData();
@@ -509,11 +638,12 @@ public class Threads extends Thread {
 
                             if(loginSuccess) {
                                 String responseData = user.getId() + "," + user.getRole();
-                                txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.SUCCESS, responseData);
+                                studentID = user.getId();
                                 System.out.println("User " + id + " logged in successfully");
                             } else {
-                                txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.FAIL, "Login Failed");
                                 System.out.println("Login failed for user " + id);
                             }
@@ -536,6 +666,27 @@ public class Threads extends Thread {
             closeResources();
         }
     }
+    private int mapDormitoryToId(String dormitoryName) {
+        switch (dormitoryName) {
+            case "푸름관1동": return 1;
+            case "푸름관2동": return 2;
+            case "푸름관3동": return 3;
+            case "푸름관4동": return 4;
+            case "오름관1동": return 5;
+            case "오름관2동": return 6;
+            case "오름관3동": return 7;
+            default: throw new IllegalArgumentException("Invalid dormitory name: " + dormitoryName);
+        }
+    }
+    private int mapMealId(String dormitoryName, String mealType) {
+        int dormitoryId = mapDormitoryToId(dormitoryName);
+        switch (mealType) {
+            case "7일식": return dormitoryId * 2 - 1; // 7일식은 홀수 ID
+            case "5일식": return dormitoryId * 2;     // 5일식은 짝수 ID
+            default: throw new IllegalArgumentException("Invalid meal type: " + mealType);
+        }
+    }
+
     private int mapDormitoryToId(String dormitoryName) {
         switch (dormitoryName) {
             case "푸름관1동": return 1;

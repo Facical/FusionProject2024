@@ -10,8 +10,10 @@ import java.time.LocalDate;
 public class AdmissionDTO {
     private int admissionId;
     private int applicationId;
+    private int studentId;
     private int roomId;
     private int bedNumber;
+    private int dormitoryId;
     private LocalDate admissionDate;
     private LocalDate residenceStartDate;
     private LocalDate residenceEndDate;

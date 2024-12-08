@@ -15,23 +15,32 @@ public class ApplicationPreferenceDAO {
 
         Connection conn = null;
         PreparedStatement pstmt = null;
-    public ApplicationPreferenceDTO getApplicationPreference(int application_id) {
+
+    public ApplicationPreferenceDTO getApplicationPreference(int application_id, int dormitory_id) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         ApplicationPreferenceDTO applicationPreferenceDTO = null;
 
         try {
+            System.out.println("test");
+            System.out.println(application_id + "," + dormitory_id);
             conn = ds.getConnection();
-            String sql = "SELECT * FROM application_preference WHERE application_id = ?";
+            String sql = "SELECT * FROM application_preference WHERE application_id = ? AND dormitory_id = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, application_id);
+            pstmt.setInt(2, dormitory_id);
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
                 applicationPreferenceDTO = new ApplicationPreferenceDTO();
                 applicationPreferenceDTO.setApplication_preference_id(rs.getInt("application_preference_id"));
                 applicationPreferenceDTO.setApplication_id(rs.getInt("application_id"));
+<<<<<<< HEAD
+=======
+//                applicationPreferenceDTO.setPreference_first(rs.getInt("preference_first"));
+//                applicationPreferenceDTO.setPreference_second(rs.getInt("preference_second"));
+>>>>>>> 455d6a9d788cfa8f60cf72def98d040e7fded30c
                 applicationPreferenceDTO.setDormitory_id(rs.getInt("dormitory_id"));
                 applicationPreferenceDTO.setPreference_order(rs.getInt("preference_order"));
                 applicationPreferenceDTO.setMeal_id(rs.getInt("meal_id"));

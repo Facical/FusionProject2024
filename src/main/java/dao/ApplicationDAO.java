@@ -18,6 +18,10 @@ public class ApplicationDAO {
         ResultSet rs = null;
         ApplicationDTO applicationDTO = null;
 
+    /*public ApplicationDTO getAllApplicationInfo()
+    {
+
+    }*/
 
     public ApplicationDTO getApplicationInfo(int studentID){
         /*
@@ -52,32 +56,28 @@ public class ApplicationDAO {
 
     }
 
-    public void setApplicationInfo(ApplicationDTO applicationDTO){
+    public boolean applyAdmission(ApplicationDTO applicationDTO) {  // boolean 대신 int 반환
         Connection conn = null;
         PreparedStatement pstmt = null;
-        int updateResult;
-
-        /*
-        application_id 를 지정해서 넣는 것이 맞는 건가?
-         */
 
         try {
             conn = ds.getConnection();
-            String sql = "INSERT INTO application (student_id, application_date, schedule_id) VALUES (?, ?, ?)";
+            // room_number,room_type, capacity, 일단 제외
+            String sql = "INSERT INTO application (student_id,application_date) VALUES (?, ?)";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, applicationDTO.getStudentId());
             pstmt.setString(2, applicationDTO.getApplicationDate());
-            pstmt.setInt(3, applicationDTO.getScheduleId());
-            updateResult = pstmt.executeUpdate();
 
-            if (updateResult > 0) {
-                System.out.println("Update successfully");
-            }
+
+            int result = pstmt.executeUpdate();
+            return result > 0;
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         } finally {
-            closeResources(conn, pstmt);
+            closeResources(conn, pstmt, null);
         }
+
 
     }
 
@@ -105,31 +105,6 @@ public class ApplicationDAO {
             closeResources(conn, pstmt, rs);
         }
         return applicationDTO.getApplicationId();
-    }
-
-    public boolean applyAdmission(ApplicationDTO applicationDTO) {  // boolean 대신 int 반환
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            conn = ds.getConnection();
-            // room_number,room_type, capacity, 일단 제외
-            String sql = "INSERT INTO application (student_id,application_date) VALUES (?, ?)";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, applicationDTO.getStudentId());
-            pstmt.setString(2, applicationDTO.getApplicationDate());
-
-
-            int result = pstmt.executeUpdate();
-            return result > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            closeResources(conn, pstmt, null);
-        }
-
-
     }
 
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {

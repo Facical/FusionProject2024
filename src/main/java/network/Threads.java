@@ -28,12 +28,16 @@ public class Threads extends Thread {
 
     private ScheduleDAO scheduleDAO;
     private ScheduleDTO scheduleDTO;
+
     private WithdrawDAO withdrawDAO;
     private AdmissionDAO admissionDAO;
     private ApplicationPreferenceDAO applicationPreferenceDAO;
     private ApplicationDAO applicationDAO;
     private RoomDAO roomDAO;
     private MealDAO mealDAO;
+    private ApplicantInfoDAO applicantInfoDAO;
+    private ApplicantInfoDTO applicantInfoDTO;
+
     private ScheduleService scheduleService;
     private RoomService roomService;
     private MealService mealService;
@@ -42,6 +46,10 @@ public class Threads extends Thread {
     private StudentService studentService;
     private AdmissionService admissionService;
     private TuberculosisService tuberculosisService;
+
+    private StudentPaymentDAO studentPaymentDAO;
+    private StudentPaymentDTO studentPaymentDTO;
+
     private DataInputStream in;
     private DataOutputStream out;
     byte[] header = null;
@@ -68,6 +76,8 @@ public class Threads extends Thread {
         this.applicationPreferenceService = new ApplicationPreferenceService();
         this.studentService = new StudentService();
         this.admissionService = new AdmissionService();
+        this.studentPaymentDAO = new StudentPaymentDAO();
+        this.studentPaymentDTO = new StudentPaymentDTO();
     }
 
     public void run() {
@@ -547,11 +557,60 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
+                            // 입사 신청자 조회
+                            case Packet.VIEW_APPLICANTS :
+                                List<ApplicantInfoDTO> applicantList = applicantInfoDAO.getApplicantDormitoryInfo();
+                                String applicantInfo = ApplicantViewService.ListToString(applicantList);
+
+
+                                // 메시지로 작성 후 패킷화 해줌
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_APPLICANTS,
+                                        Packet.SUCCESS, applicantInfo);
+                                packet = Packet.makePacket(txMsg);
+
+                                // 스트림 통해서 보내줌
+                                out.write(packet);
+                                out.flush();
+                                break;
+
+
+
+                                // 2.5 생활관 비용 납부자 조회 기능
                             case Packet.VIEW_PAID_STUDENTS :
+                                // 요청 받음
+                                List<StudentPaymentDTO> paidStudentList = studentPaymentDAO.getPaidStudentList();
+                                String paidList = StudentPaymentCheckService.ListToString(paidStudentList);
+
+                                // 메시지로 작성 후 패킷화 해줌
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_PAID_STUDENTS,
+                                        Packet.SUCCESS, paidList);
+                                packet = Packet.makePacket(txMsg);
+
+                                // 스트림 통해서 보내줌
+                                out.write(packet);
+                                out.flush();
+                                break;
+
+                            // 2.6 생활관 비용 미납부자 조회 기능
+                            case Packet.VIEW_UNPAID_STUDENTS :
+                                // 요청 받음
+                                List<StudentPaymentDTO> unpaidStudentList = studentPaymentDAO.getUnpaidStudentList();
+                                String unpaidList = StudentPaymentCheckService.ListToString(unpaidStudentList);
+
+                                // 메시지로 작성 후 패킷화 해줌
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_UNPAID_STUDENTS,
+                                        Packet.SUCCESS, unpaidList);
+                                packet = Packet.makePacket(txMsg);
+
+                                // 스트림 통해서 보내줌
+                                out.write(packet);
+                                out.flush();
+                                break;
 
                         }
                         break;
 
+                        // TYPE = 0x02
                     case Packet.RESPONSE:
                         System.out.println("로그인 응답 정보 도착");
                         String data = rxMsg.getData();

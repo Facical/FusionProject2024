@@ -393,6 +393,22 @@ public class Client {
                     break;
 
                 case 3: // 2.3 기능
+                    System.out.println("=== 입사 신청자 조회 ===");
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.VIEW_APPLICANTS,
+                            Packet.NOT_USED,
+                            "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
 
                 case 4: // 2.4 기능
 
@@ -408,10 +424,34 @@ public class Client {
                     // 위에 까지가 조회 요청
 
                     // 조회 요청해서 서버가 DB 조회해서 뿌려주는 것
-                    rxMsg = Message.readMessage(in);
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
 
-                case 6: // 2.6 기능
+
+                case 6: // 2.6 생활관 비용 미납부자 조회 기능
                     System.out.println("=== 생활관 비용 미납부자 조회 ===");
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.VIEW_UNPAID_STUDENTS,
+                            Packet.NOT_USED,
+                            "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+                    // 위에 까지가 조회 요청
+
+                    // 조회 요청해서 서버가 DB 조회해서 뿌려주는 것
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
 
                 case 7:
                     System.out.println("=== 결핵진단서 제출 현황 ===");

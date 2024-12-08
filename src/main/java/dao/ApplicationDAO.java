@@ -13,15 +13,7 @@ import java.sql.*;
 public class ApplicationDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        ApplicationDTO applicationDTO = null;
 
-    /*public ApplicationDTO getAllApplicationInfo()
-    {
-
-    }*/
 
     public ApplicationDTO getApplicationInfo(int studentID){
         /*

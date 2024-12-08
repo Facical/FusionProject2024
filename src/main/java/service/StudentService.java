@@ -11,4 +11,8 @@ public class StudentService {
     public List<StudentDTO> getAllStudentInfo(){
         return studentDAO.getAllStudentInfo();
     }
+    public String getGender(int studentId){
+        return studentDAO.getGender(studentId);
+    }
+
 }

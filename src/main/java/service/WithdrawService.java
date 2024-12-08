@@ -28,6 +28,6 @@ public class WithdrawService {
                     .append(totalRefund).append(";");
         }
 
-        return sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
+        return sb.length() > 0 ? sb.substring(0, sb.length() - 1) : " ";
     }
 }

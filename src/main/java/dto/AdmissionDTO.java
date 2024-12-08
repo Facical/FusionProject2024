@@ -12,6 +12,7 @@ public class AdmissionDTO {
     private int applicationId;
     private int roomId;
     private int bedNumber;
+    private int dormitoryId;
     private LocalDate admissionDate;
     private LocalDate residenceStartDate;
     private LocalDate residenceEndDate;

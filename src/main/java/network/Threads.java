@@ -77,7 +77,7 @@ public class Threads extends Thread {
             out = new DataOutputStream(socket.getOutputStream());
 
             //나중에 지우기
-            txMsg = Message.makeMessage(Packet.REQUEST, Packet.Login, Packet.NOT_USED, "Login Request");
+            txMsg = Message.makeMessage(Packet.REQUEST, Packet.LOGIN, Packet.NOT_USED, "Login Request");
             packet = Packet.makePacket(txMsg);
             out.write(packet);
             out.flush();
@@ -120,11 +120,12 @@ public class Threads extends Thread {
                                 AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
                                 //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
-                                if(admissionDTO == null){
+                                ApplicationPreferenceDTO applicationPreferenceDTO;
+                                if (admissionDTO == null) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "합격 대상자가 아닙니다.")));
                                     out.flush();
-                                }else {
-                                    ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+                                } else {
+                                    applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId(),admissionDTO.getDormitoryId());
 
                                     RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
                                     MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
@@ -163,7 +164,7 @@ public class Threads extends Thread {
                                 String[] admissionParts = admissionData.split(",");
                                 //firstDormitory + "," + firstDormitoryMeal + "," + secondDormitory + "," + secondDormitoryMeal;
                                 applicationDTO = new ApplicationDTO();
-                                ApplicationPreferenceDTO applicationPreferenceDTO = new ApplicationPreferenceDTO();
+                                applicationPreferenceDTO = new ApplicationPreferenceDTO();
 
                                 applicationDTO.setStudentId(loggedInUserId);
                                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -177,41 +178,71 @@ public class Threads extends Thread {
                                 // 현재 안됨. 임시로 1로 해둠.
 
                                 int applicationId = applicationService.findApplicationId(loggedInUserId);
-
                                 applicationPreferenceDTO.setApplication_id(applicationId);
-                                if(admissionParts[0].equals("푸름관1동")){
-                                    applicationPreferenceDTO.setPreference_first(1);
-                                }else if(admissionParts[0].equals("푸름관2동")){
-                                    applicationPreferenceDTO.setPreference_first(2);
-                                }else if(admissionParts[0].equals("푸름관3동")){
-                                    applicationPreferenceDTO.setPreference_first(3);
-                                }else if(admissionParts[0].equals("푸름관4동")){
-                                    applicationPreferenceDTO.setPreference_first(4);
-                                }else if(admissionParts[0].equals("오름관1동")){
-                                    applicationPreferenceDTO.setPreference_first(5);
-                                }else if(admissionParts[0].equals("오름관2동")){
-                                    applicationPreferenceDTO.setPreference_first(6);
-                                }else if(admissionParts[0].equals("오름관3동")){
-                                    applicationPreferenceDTO.setPreference_first(7);
-                                }
 
-                                applicationPreferenceDTO.setMeal_first(admissionParts[1]);
-                                if(admissionParts[2].equals("푸름관1동")){
-                                    applicationPreferenceDTO.setPreference_second(1);
-                                }else if(admissionParts[2].equals("푸름관2동")){
-                                    applicationPreferenceDTO.setPreference_second(2);
-                                }else if(admissionParts[2].equals("푸름관3동")){
-                                    applicationPreferenceDTO.setPreference_second(3);
-                                }else if(admissionParts[2].equals("푸름관4동")){
-                                    applicationPreferenceDTO.setPreference_second(4);
-                                }else if(admissionParts[2].equals("오름관1동")){
-                                    applicationPreferenceDTO.setPreference_second(5);
-                                }else if(admissionParts[2].equals("오름관2동")){
-                                    applicationPreferenceDTO.setPreference_second(6);
-                                }else if(admissionParts[2].equals("오름관3동")){
-                                    applicationPreferenceDTO.setPreference_second(7);
+                                if (admissionParts[0].equals("푸름관1동")) {
+                                    applicationPreferenceDTO.setDormitory_id(1);
+                                    applicationPreferenceDTO.setPreference_order(1);
+                                    if (admissionParts[1].equals("5일식"))
+                                        applicationPreferenceDTO.setMeal_id(1);
+                                    else if (admissionParts[3].equals("7일식"))
+                                        applicationPreferenceDTO.setMeal_id(2);
+
+                                } else if (admissionParts[0].equals("푸름관2동")) {
+                                    applicationPreferenceDTO.setDormitory_id(2);
+                                    applicationPreferenceDTO.setPreference_order(1);
+                                    if (admissionParts[1].equals("5일식"))
+                                        applicationPreferenceDTO.setMeal_id(3);
+                                    else if (admissionParts[3].equals("7일식"))
+                                        applicationPreferenceDTO.setMeal_id(4);
+
+                                } else if (admissionParts[0].equals("푸름관3동")) {
+                                    applicationPreferenceDTO.setDormitory_id(3);
+                                    applicationPreferenceDTO.setPreference_order(1);
+                                    if (admissionParts[1].equals("5일식"))
+                                        applicationPreferenceDTO.setMeal_id(5);
+                                    else if (admissionParts[3].equals("7일식"))
+                                        applicationPreferenceDTO.setMeal_id(6);
+
+                                } else if (admissionParts[0].equals("푸름관4동")) {
+                                    applicationPreferenceDTO.setDormitory_id(4);
+                                    applicationPreferenceDTO.setPreference_order(1);
+                                    if (admissionParts[1].equals("5일식"))
+                                        applicationPreferenceDTO.setMeal_id(7);
+                                    else if (admissionParts[3].equals("7일식"))
+                                        applicationPreferenceDTO.setMeal_id(8);
+
+                                } else if (admissionParts[0].equals("오름관1동")) {
+                                    applicationPreferenceDTO.setDormitory_id(5);
+                                    applicationPreferenceDTO.setPreference_order(1);
+                                    if (admissionParts[1].equals("5일식"))
+                                        applicationPreferenceDTO.setMeal_id(9);
+                                    else if (admissionParts[3].equals("7일식"))
+                                        applicationPreferenceDTO.setMeal_id(10);
+
+                                } else if (admissionParts[0].equals("오름관2동")) {
+                                    applicationPreferenceDTO.setDormitory_id(6);
+                                    applicationPreferenceDTO.setPreference_order(1);
+                                    if (admissionParts[1].equals("5일식"))
+                                        applicationPreferenceDTO.setMeal_id(11);
+                                    else if (admissionParts[3].equals("7일식"))
+                                        applicationPreferenceDTO.setMeal_id(12);
+
+                                } else if (admissionParts[0].equals("오름관3동")) {
+                                    applicationPreferenceDTO.setDormitory_id(7);
+                                    applicationPreferenceDTO.setPreference_order(1);
+                                    if (admissionParts[1].equals("5일식"))
+                                        applicationPreferenceDTO.setMeal_id(13);
+                                    else if (admissionParts[3].equals("7일식"))
+                                        applicationPreferenceDTO.setMeal_id(14);
+
                                 }
-                                applicationPreferenceDTO.setMeal_second(admissionParts[3]);
+                                // 1: 오름관1동, 2: 5일식, 3: 오름관2동, 4: 5일식
+                                // meal_id = 1, dormitory_id = 1, 7일식
+                                // meal_id = 2, dormitory_id = 1, 5일식
+                                // dormitory_id랑 admissionParts[1] 비교
+                                // dormitory_id랑 admissionParts[2] 비교
+
                                 boolean applicationPreferenceSuccess = applicationPreferenceService.applyPreference(applicationPreferenceDTO);
                                 if (applicationSuccess & applicationPreferenceSuccess) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
@@ -258,11 +289,11 @@ public class Threads extends Thread {
                                 admissionDTO = admissionDAO.findAdmission(studentID);
                                 //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
-                                if(admissionDTO == null){
+                                if (admissionDTO == null) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));
                                     out.flush();
-                                }else {
-                                    applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+                                } else {
+                                    applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId(),admissionDTO.getDormitoryId());
 
                                     WithdrawDTO withdraw = new WithdrawDTO();
                                     String data = rxMsg.getData();
@@ -280,12 +311,11 @@ public class Threads extends Thread {
                                     MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
                                     int totalFee = roomDTO.getFee() + mealDTO.getFee();
 
-                                    if(now.isBefore(admissionDTO.getResidenceStartDate())){
+                                    if (now.isBefore(admissionDTO.getResidenceStartDate())) {
                                         withdraw.setWithdrawalType("입사 전");
                                         //환불 금액
                                         withdraw.setRefundAmount(totalFee);
-                                    }
-                                    else{
+                                    } else {
                                         Period remainPeriod = Period.between(now, admissionDTO.getResidenceEndDate());
                                         Period totalPeriod = Period.between(admissionDTO.getResidenceStartDate(), admissionDTO.getResidenceEndDate());
                                         withdraw.setWithdrawalType("입사 후");
@@ -316,10 +346,10 @@ public class Threads extends Thread {
                                 WithdrawDTO withdraw;
                                 withdraw = withdrawDAO.getWithdrawInfo(studentID);
 
-                                if(withdraw == null){
+                                if (withdraw == null) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.FAIL, "환불 신청을 하지 않았거나 대상자가 아닙니다.")));
                                     out.flush();
-                                }else{
+                                } else {
                                     String newData = withdraw.getWithdrawalStatus();
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.SUCCESS, newData)));
                                     out.flush();
@@ -471,25 +501,25 @@ public class Threads extends Thread {
                                 RoomDTO roomDTO = new RoomDTO();
                                 MealDTO mealDTO = new MealDTO();
 
-                                if(parts[0].equals("푸름관1동")){
+                                if (parts[0].equals("푸름관1동")) {
                                     roomDTO.setDormitoryId(1);
                                     mealDTO.setDormitoryId(1);
-                                }else if(parts[0].equals("푸름관2동")){
+                                } else if (parts[0].equals("푸름관2동")) {
                                     roomDTO.setDormitoryId(2);
                                     mealDTO.setDormitoryId(2);
-                                }else if(parts[0].equals("푸름관3동")){
+                                } else if (parts[0].equals("푸름관3동")) {
                                     roomDTO.setDormitoryId(3);
                                     mealDTO.setDormitoryId(3);
-                                }else if(parts[0].equals("푸름관4동")){
+                                } else if (parts[0].equals("푸름관4동")) {
                                     roomDTO.setDormitoryId(4);
                                     mealDTO.setDormitoryId(4);
-                                }else if(parts[0].equals("오름관1동")){
+                                } else if (parts[0].equals("오름관1동")) {
                                     roomDTO.setDormitoryId(5);
                                     mealDTO.setDormitoryId(5);
-                                }else if(parts[0].equals("오름관2동")){
+                                } else if (parts[0].equals("오름관2동")) {
                                     roomDTO.setDormitoryId(6);
                                     mealDTO.setDormitoryId(6);
-                                }else if(parts[0].equals("오름관3동")){
+                                } else if (parts[0].equals("오름관3동")) {
                                     roomDTO.setDormitoryId(7);
                                     mealDTO.setDormitoryId(7);
                                 }
@@ -533,11 +563,11 @@ public class Threads extends Thread {
 
                             if(loginSuccess) {
                                 String responseData = user.getId() + "," + user.getRole();
-                                txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.SUCCESS, responseData);
                                 System.out.println("User " + id + " logged in successfully");
                             } else {
-                                txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.FAIL, "Login Failed");
                                 System.out.println("Login failed for user " + id);
                             }

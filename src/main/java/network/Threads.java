@@ -35,8 +35,8 @@ public class Threads extends Thread {
     private RoomDAO roomDAO;
     private MealDAO mealDAO;
     private ScheduleService scheduleService;
-    private RoomService roomService;
-    private MealService mealService;
+//    private RoomService roomService;
+//    private MealService mealService;
     private ApplicationService applicationService;
     private ApplicationPreferenceService applicationPreferenceService;
     private StudentService studentService;
@@ -55,8 +55,8 @@ public class Threads extends Thread {
         this.userDAO = new UserDAO();
         this.scheduleService = new ScheduleService();
         this.tuberculosisService = new TuberculosisService();
-        this.roomService = new RoomService();
-        this.mealService = new MealService();
+    //    this.roomService = new RoomService();
+    //    this.mealService = new MealService();
         this.scheduleDAO = new ScheduleDAO();
         this.withdrawDAO = new WithdrawDAO();
         this.admissionDAO = new AdmissionDAO();
@@ -118,12 +118,14 @@ public class Threads extends Thread {
                             case Packet.CHECK_PAY_DORMITORY:
                                 ApplicationDTO applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
-                                ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+                                //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
                                 if(admissionDTO == null){
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "합격 대상자가 아닙니다.")));
                                     out.flush();
                                 }else {
+                                    ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+
                                     RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
                                     MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
                                     int totalFee = roomDTO.getFee() + mealDTO.getFee();
@@ -182,12 +184,14 @@ public class Threads extends Thread {
                                 LocalDate now = LocalDate.now();
                                 applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 admissionDTO = admissionDAO.findAdmission(studentID);
-                                applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+                                //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
                                 if(admissionDTO == null){
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));
                                     out.flush();
                                 }else {
+                                    ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+
                                     WithdrawDTO withdraw = new WithdrawDTO();
                                     String data = rxMsg.getData();
 
@@ -420,10 +424,10 @@ public class Threads extends Thread {
 
                                 roomDTO.setFee(Integer.parseInt(parts[1]));
                                 mealDTO.setFee(Integer.parseInt(parts[2]));
-                                boolean roomSuccess = roomService.registerRoom(roomDTO);
-                                boolean mealSuccess = mealService.registerMeal(mealDTO);
+                                //boolean roomSuccess = roomService.registerRoom(roomDTO);
+                                //boolean mealSuccess = mealService.registerMeal(mealDTO);
 
-                                if (roomSuccess & mealSuccess) {
+                                if (roomDTO != null && mealDTO != null) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_FEE,
                                             Packet.SUCCESS,

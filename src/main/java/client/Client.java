@@ -279,7 +279,7 @@ public class Client {
                     System.out.println("퇴사 신청 메뉴 입니다.");
                     System.out.println("환불 받으실 은행 이름, 계좌 번호, 퇴사 신청 사유를 입력해주세요.");
                     System.out.print("환불 받으실 은행 이름: ");
-                    sc.nextLine();
+                    //sc.nextLine();
                     String bankName = sc.nextLine();
                     System.out.print("계좌 번호: ");
                     String accountNumber = sc.nextLine();

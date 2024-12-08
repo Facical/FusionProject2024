@@ -86,6 +86,7 @@ public class Client {
                                 this.studentId = userId;
                                 loggedInUserId = userId;
                                 studentRun();
+                                return;
                             } else if (userRole.equals("관리자")) {
                                 adminRun();
                                 return;
@@ -133,6 +134,8 @@ public class Client {
                     break;
                 case 2: // 1.2 기능
                     System.out.println("=== 입사 신청 ===");
+                    System.out.println("오름관 1동, 푸름관 3동 : 여자만 신청 가능");
+                    System.out.println("푸름관 1동, 푸름관 2동, 푸름관 4동, 오름관 2동, 오름관 3동 : 남자만 신청 가능");
                     System.out.println("1지망 생활관 입력");
                     String firstDormitory = br.readLine();
                     System.out.println("1지망 생활관의 식사 입력 (5일식, 7일식) : ");
@@ -157,11 +160,14 @@ public class Client {
                     in.read(body);
                     Message.makeMessageBody(rxMsg, body);
 
-                    if (rxMsg.getType() == Packet.RESULT){
-                        System.out.println("입사 신청 성공!");
-                    }else{
-                        System.out.println("입사 신청 실패");
+                    if (rxMsg.getType() == Packet.RESULT) {
+                        if (rxMsg.getDetail() == Packet.SUCCESS) {
+                            System.out.println("입사 신청 성공!");
+                        } else {
+                            System.out.println("입사 신청 실패");
+                        }
                     }
+
                     break;
                 case 3: // 1.3 기능
                     //합격 여부 및 호실 확인

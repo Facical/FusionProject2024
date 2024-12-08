@@ -111,35 +111,42 @@ public class Threads extends Thread {
                         AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
                         ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
-                        RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
-                        MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
-                        int totalFee = roomDTO.getFee() + mealDTO.getFee();
+                        if(admissionDTO == null){
+                            out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "합격 대상자가 아닙니다.")));
+                            out.flush();
+                        }else {
+                            RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
+                            MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
+                            int totalFee = roomDTO.getFee() + mealDTO.getFee();
 
-                        String data = roomDTO.getFee() + "," + mealDTO.getFee() + "," + totalFee + "," + admissionDTO.getPaymentStatus();
+                            String data = roomDTO.getFee() + "," + mealDTO.getFee() + "," + totalFee + "," + admissionDTO.getPaymentStatus();
 
-                        out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, data)));
-                        out.flush();
+                            out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, data)));
+                            out.flush();
 
-                        rxMsg = Message.readMessage(in);
-                        Message.printMessage(rxMsg);
+                            rxMsg = Message.readMessage(in);
+                            Message.printMessage(rxMsg);
 
 
-                        if(rxMsg.getDetail() == Packet.SUCCESS){
-                            admissionDTO.setPaymentStatus("납부 완료");
-                            admissionDAO.UpdatePaymentStatus(admissionDTO);
+                            if(rxMsg.getDetail() == Packet.SUCCESS){
+                                admissionDTO.setPaymentStatus("납부 완료");
+                                admissionDAO.UpdatePaymentStatus(admissionDTO);
+                            }
+
+
+                            admissionDTO = admissionDAO.findAdmission(studentID);
+                            if(admissionDTO.getPaymentStatus().equals("납부 완료")){
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.SUCCESS, "");
+                            } else if (admissionDTO.getPaymentStatus().equals("미납")) {
+                                txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.FAIL, "");
+                            }
+
+                            packet = Packet.makePacket(txMsg);
+                            out.write(packet);
+                            out.flush();
                         }
 
 
-                        admissionDTO = admissionDAO.findAdmission(studentID);
-                        if(admissionDTO.getPaymentStatus().equals("납부 완료")){
-                            txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.SUCCESS, "");
-                        } else if (admissionDTO.getPaymentStatus().equals("미납")) {
-                            txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.FAIL, "");
-                        }
-
-                        packet = Packet.makePacket(txMsg);
-                        out.write(packet);
-                        out.flush();
                     }
                     // 환불 신청
                     else if (code == Packet.REQUEST_WITHDRAWAL) {
@@ -147,60 +154,76 @@ public class Threads extends Thread {
                         ApplicationDTO applicationDTO = applicationDAO.getApplicationInfo(studentID);
                         AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
                         ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
-                        WithdrawDTO withdraw = new WithdrawDTO();
-                        String data = rxMsg.getData();
 
-                        String[] parts = data.split(",");
-                        String bankName = parts[0];
-                        String accountNumber = parts[1];
-                        String reason = parts[2];
+                        if(admissionDTO == null){
+                            out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));
+                            out.flush();
+                        }else {
+                            WithdrawDTO withdraw = new WithdrawDTO();
+                            String data = rxMsg.getData();
 
-                        withdraw.setStudentId(studentID);
-                        withdraw.setApplicationDate(now.toString());
+                            String[] parts = data.split(",");
+                            String bankName = parts[0];
+                            String accountNumber = parts[1];
+                            String reason = parts[2];
 
-                        //퇴사 상태
-                        RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
-                        MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
-                        int totalFee = roomDTO.getFee() + mealDTO.getFee();
+                            withdraw.setStudentId(studentID);
+                            withdraw.setApplicationDate(now.toString());
 
-                        if(now.isBefore(admissionDTO.getResidenceStartDate())){
-                            withdraw.setWithdrawalType("입사 전");
-                            //환불 금액
-                            withdraw.setRefundAmount(totalFee);
+                            //퇴사 상태
+                            RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
+                            MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
+                            int totalFee = roomDTO.getFee() + mealDTO.getFee();
+
+                            if(now.isBefore(admissionDTO.getResidenceStartDate())){
+                                withdraw.setWithdrawalType("입사 전");
+                                //환불 금액
+                                withdraw.setRefundAmount(totalFee);
+                            }
+                            else{
+                                Period remainPeriod = Period.between(now, admissionDTO.getResidenceEndDate());
+                                Period totalPeriod = Period.between(admissionDTO.getResidenceStartDate(), admissionDTO.getResidenceEndDate());
+                                withdraw.setWithdrawalType("입사 후");
+
+                                //환불 금액
+                                int date = remainPeriod.getYears() * 365 + remainPeriod.getMonths() * 30 + remainPeriod.getDays();
+                                int totalDate = totalPeriod.getYears() * 365 + totalPeriod.getMonths() * 30 + totalPeriod.getDays();
+                                int fee = (totalFee / totalDate) * date;
+                                withdraw.setRefundAmount(fee);
+                            }
+
+
+                            withdraw.setBankName(bankName);
+                            withdraw.setAccountNumber(parseInt(accountNumber));
+
+                            withdraw.setWithdrawalStatus("취소");
+                            withdraw.setReason(reason);
+                            //생활관 아이디
+                            withdraw.setDormitoryId(applicationPreferenceDTO.getDormitory_id());
+
+                            withdrawDAO.setWithdrawInfo(withdraw);
+
+                            out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.SUCCESS, "")));
+                            out.flush();
                         }
-                        else{
-                            Period period = Period.between(now, admissionDTO.getResidenceEndDate());
-                            Period totalPeriod = Period.between(admissionDTO.getResidenceStartDate(), admissionDTO.getResidenceEndDate());
-                            withdraw.setWithdrawalType("입사 후");
-
-                            //환불 금액
-                            int date = period.getYears() * 365 + period.getMonths() * 30 + period.getDays();
-                            int totalDate = totalPeriod.getYears() * 365 + totalPeriod.getMonths() * 30 + totalPeriod.getDays();
-                            int fee = (totalFee / totalDate) * date;
-                            withdraw.setRefundAmount(fee);
-                        }
 
 
-                        withdraw.setBankName(bankName);
-                        withdraw.setAccountNumber(parseInt(accountNumber));
-
-                        withdraw.setWithdrawalStatus("취소");
-                        withdraw.setReason(reason);
-                        //생활관 아이디
-                        withdraw.setDormitoryId(applicationPreferenceDTO.getDormitory_id());
-
-                        withdrawDAO.setWithdrawInfo(withdraw);
-
-                        out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.SUCCESS, "")));
-                        out.flush();
                     }
                     // 환불 처리 확인
                     else if (code == Packet.CHECK_REFUND) {
                         WithdrawDTO withdraw;
                         withdraw = withdrawDAO.getWithdrawInfo(studentID);
-                        String newData = withdraw.getWithdrawalStatus();
-                        out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.NOT_USED, newData)));
-                        out.flush();
+
+                        if(withdraw == null){
+                            out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.FAIL, "환불 신청을 하지 않았거나 대상자가 아닙니다.")));
+                            out.flush();
+                        }else{
+                            String newData = withdraw.getWithdrawalStatus();
+                            out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.SUCCESS, newData)));
+                            out.flush();
+                        }
+
+
                     }
                 }
                 else if(type == Packet.RESPONSE){

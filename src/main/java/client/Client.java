@@ -140,27 +140,32 @@ public class Client {
                         String paymantStatus = parts[3];
                         System.out.println(roomFee + ", " + mealFee + ", " + totalFee + ", " + paymantStatus);
                     }
+
+                    System.out.println("납부하시겠습니까? (Y/N): ");
+                    char userChoice = sc.next().charAt(0);
+
+                    if(userChoice == 'Y' || userChoice == 'y'){
+                        out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, "")));
+                        out.flush();
+                    } else if (userChoice == 'N' || userChoice == 'n') {
+                        out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "")));
+                        out.flush();
+                    }
+
+                    rxMsg = Message.readMessage(in);
+                    Message.printMessage(rxMsg);
+
+                    if(rxMsg.getDetail() == Packet.SUCCESS){
+                        System.out.println("납부가 정상적으로 처리되었습니다.");
+                    } else if (rxMsg.getDetail() == Packet.FAIL) {
+                        System.out.println("미납부 상태입니다.");
+                    }
+
+                } else if (type == Packet.RESULT && detail == Packet.FAIL) {
+                    System.out.println(rxMsg.getData());
                 }
 
-                System.out.println("납부하시겠습니까? (Y/N): ");
-                char userChoice = sc.next().charAt(0);
 
-                if(userChoice == 'Y' || userChoice == 'y'){
-                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, "")));
-                    out.flush();
-                } else if (userChoice == 'N' || userChoice == 'n') {
-                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "")));
-                    out.flush();
-                }
-
-                rxMsg = Message.readMessage(in);
-                Message.printMessage(rxMsg);
-
-                if(rxMsg.getDetail() == Packet.SUCCESS){
-                    System.out.println("납부가 정상적으로 처리되었습니다.");
-                } else if (rxMsg.getDetail() == Packet.FAIL) {
-                    System.out.println("미납부 상태입니다.");
-                }
 
 
             } else if (studentMenu == 6) { // 퇴사 신청
@@ -184,6 +189,7 @@ public class Client {
                 if (rxMsg.getDetail() == Packet.SUCCESS){
                     System.out.println("퇴사 신청이 정상적으로 처리 되었습니다.");
                 }else{
+                    System.out.println(rxMsg.getData());
                     System.out.println("퇴사 신청에 실패하였습니다.");
                 }
 
@@ -195,11 +201,16 @@ public class Client {
                 Message rxMsg = Message.readMessage(in);
                 Message.printMessage(rxMsg);
 
-                if(rxMsg.getData().equals("승인")){
-                    System.out.println("환불 처리 되었습니다. ");
-                } else if (rxMsg.getData().equals("취소")) {
-                    System.out.println("환불 처리가 되어있지 않습니다. ");
+                if(rxMsg.getDetail() == Packet.SUCCESS){
+                    if(rxMsg.getData().equals("승인")){
+                        System.out.println("환불 처리 되었습니다. ");
+                    } else if (rxMsg.getData().equals("취소")) {
+                        System.out.println("환불 처리가 되어있지 않습니다. ");
+                    }
+                } else if (rxMsg.getDetail() == Packet.FAIL) {
+                    System.out.println(rxMsg.getData());
                 }
+
 
             } else if (studentMenu == 8) {
                 System.out.println("프로그램을 종료합니다......");

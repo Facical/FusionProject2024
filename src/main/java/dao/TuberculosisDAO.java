@@ -15,15 +15,15 @@ public class TuberculosisDAO {
 
         try {
             conn = ds.getConnection();
-            String sql = "INSERT INTO tuberculosis_certificate (certification_id, student_id, submission_date, due_date, image_data, file_name, file_type) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO tuberculosis_certificate (student_id, submission_date, due_date, image_data, file_name, file_type) " +
+                    "VALUES (?, ?, ?, ?, ?, ?)";
             pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, certificate.getCertificationId());
-            pstmt.setInt(2, certificate.getStudentId());
-            pstmt.setDate(3, certificate.getSubmissionDate());
-            pstmt.setDate(4, certificate.getDueDate());
-            pstmt.setBytes(5, certificate.getImageData());
-            pstmt.setString(6, certificate.getFileName());
-            pstmt.setString(7, certificate.getFileType());
+            pstmt.setInt(1, certificate.getStudentId());
+            pstmt.setDate(2, certificate.getSubmissionDate());
+            pstmt.setDate(3, certificate.getDueDate());
+            pstmt.setBytes(4, certificate.getImageData());
+            pstmt.setString(5, certificate.getFileName());
+            pstmt.setString(6, certificate.getFileType());
 
             int result = pstmt.executeUpdate();
             return result > 0;
@@ -43,7 +43,7 @@ public class TuberculosisDAO {
 
         try {
             conn = ds.getConnection();
-            String sql = "SELECT * FROM tuberculosis_certificate";
+            String sql = "SELECT * FROM tuberculosis_certificate ORDER BY submission_date DESC";
             pstmt = conn.prepareStatement(sql);
             rs = pstmt.executeQuery();
 

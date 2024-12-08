@@ -26,10 +26,6 @@ public class Client {
     byte[] body = null;
     byte[] packet = null;
 
-    // 날짜 형식 지정을 위한 포매터
-//    private static final SimpleDateFormat dateFormat =
-//            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
     public Client(String ip, int port) {
         this.ip = ip;
         this.port = String.valueOf(port);
@@ -46,9 +42,8 @@ public class Client {
 
     public void run() {
         try {
-            int id = -1; // 초기값만 선언하고 실제 사용은 나중에
+            int id = -1;
             while (true) {
-                // 서버로부터 메시지 수신
                 Message rxMsg = Message.readMessage(in);
                 Message.printMessage(rxMsg);
 
@@ -60,10 +55,10 @@ public class Client {
                         String idInput = br.readLine();
                         if (idInput == null || idInput.trim().isEmpty()) {
                             System.out.println("올바른 ID를 입력해주세요.");
-                            continue; // 입력이 유효하지 않으면 다시 요청
+                            continue;
                         }
 
-                        id = Integer.parseInt(idInput);  // 이 시점에서만 parseInt 수행
+                        id = Integer.parseInt(idInput);
 
                         System.out.print("비밀번호를 입력하세요: ");
                         String password = br.readLine();
@@ -81,18 +76,17 @@ public class Client {
                         if (rxMsg.getDetail() == Packet.SUCCESS) {
                             String data = rxMsg.getData();
                             String[] parts = data.split(",");
-                            int userId = Integer.parseInt(parts[0]); // 사용자 ID 저장
+                            int userId = Integer.parseInt(parts[0]);
                             String userRole = parts[1];
 
                             if (userRole.equals("학생")) {
-                                this.studentId = userId; // 클래스 멤버 변수에 저장
+                                this.studentId = userId;
                                 studentRun();
                             } else if (userRole.equals("관리자")) {
                                 adminRun();
                             }
                         }
                         break;
-                       // return;
                 }
             }
         } catch (Exception e) {
@@ -102,32 +96,21 @@ public class Client {
         }
     }
 
-    // 학생 메뉴 실행
     private void studentRun() throws IOException {
         while (true) {
             int studentMenu = StudentViewer.viewStudentPage();
             switch(studentMenu) {
-                case 1: // 선발 일정 및 비용 확인
-                    // 서버에 일정 조회 요청
+                case 1:
                     txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_SCHEDULE,
                             Packet.NOT_USED, "일정 조회 요청");
                     packet = Packet.makePacket(txMsg);
                     out.write(packet);
                     out.flush();
 
-                    // 서버로부터 응답 수신
-                    rxMsg = new Message();
-                    header = new byte[Packet.LEN_HEADER];
-                    in.read(header);
-                    Message.makeMessageHeader(rxMsg, header);
-                    body = new byte[rxMsg.getLength()];
-                    in.read(body);
-                    Message.makeMessageBody(rxMsg, body);
+                    rxMsg = Message.readMessage(in);
 
-                    // 응답 처리
                     if (rxMsg.getType() == Packet.RESULT) {
                         if (rxMsg.getDetail() == Packet.SUCCESS) {
-                            // 세미콜론으로 구분된 여러 일정 처리
                             String[] schedules = rxMsg.getData().split(";");
                             for (String schedule : schedules) {
                                 String[] parts = schedule.split(",");
@@ -143,13 +126,8 @@ public class Client {
                         }
                     }
                     break;
-                case 2: // 1.2 기능
 
-                case 3: // 1.3 기능
-
-                case 4: // 1.4 기능
-
-                case 5: // 결핵진단서 제출
+                case 5:
                     System.out.println("=== 결핵진단서 제출 ===");
                     System.out.print("제출할 파일 경로 입력: ");
                     String filePath = br.readLine();
@@ -165,8 +143,8 @@ public class Client {
                     String fileType = fileName.substring(fileName.lastIndexOf(".") + 1);
 
                     String certificateData = String.format("%d,%s,%s,%s",
-                            studentId, // 학생ID는 로그인 시 저장해둔 값 사용
-                            Base64.getEncoder().encodeToString(fileData), // 바이트 배열을 Base64로 인코딩
+                            studentId,
+                            Base64.getEncoder().encodeToString(fileData),
                             fileName,
                             fileType);
 
@@ -178,8 +156,7 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
-                    // 서버 응답 수신 및 처리
-                    Message rxMsg = Message.readMessage(in);
+                    rxMsg = Message.readMessage(in);
                     if (rxMsg.getDetail() == Packet.SUCCESS) {
                         System.out.println("결핵진단서 제출 성공");
                     } else {
@@ -187,24 +164,17 @@ public class Client {
                     }
                     break;
 
-                case 6: // 1.6 기능
-
-                case 7: // 1.7 기능
-
-                case 8: // 1.8 기능
-
-                case 0: // 종료
+                case 0:
                     return;
             }
         }
     }
 
-    // 관리자 메뉴 실행
     private void adminRun() throws IOException {
         while (true) {
             int adminMenu = AdminViewer.viewAdminPage();
             switch(adminMenu) {
-                case 1: // 선발 일정 등록
+                case 1:
                     System.out.println("=== 선발 일정 등록 ===");
                     System.out.print("기간명 입력: ");
                     String periodName = br.readLine();
@@ -223,36 +193,19 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
-                    // 서버로부터 응답 수신
-                    rxMsg = new Message();
-                    header = new byte[Packet.LEN_HEADER];
-                    in.read(header);
-                    Message.makeMessageHeader(rxMsg, header);
-                    body = new byte[rxMsg.getLength()];
-                    in.read(body);
-                    Message.makeMessageBody(rxMsg, body);
+                    rxMsg = Message.readMessage(in);
 
-                    // 등록 결과 출력
                     if (rxMsg.getDetail() == Packet.SUCCESS) {
                         System.out.println("일정 등록 성공!");
                     } else {
                         System.out.println("일정 등록 실패: " + rxMsg.getData());
                     }
                     break;
-                case 2: // 1.2 기능
 
-                case 3: // 1.3 기능
-
-                case 4: // 1.4 기능
-
-                case 5: // 1.5 기능
-
-                case 6: // 1.6 기능
-
-                case 7: // 결핵진단서 제출 확인
+                case 7:
                     System.out.println("=== 결핵진단서 제출 현황 ===");
 
-                    // 서버에 제출 현황 조회 요청
+                    // 먼저 제출 현황 조회
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.CHECK_CERTIFICATES,
                             Packet.NOT_USED,
@@ -261,26 +214,42 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
-                    // 서버로부터 응답 수신
-                    rxMsg = new Message();
-                    header = new byte[Packet.LEN_HEADER];
-                    in.read(header);
-                    Message.makeMessageHeader(rxMsg, header);
-                    body = new byte[rxMsg.getLength()];
-                    in.read(body);
-                    Message.makeMessageBody(rxMsg, body);
+                    rxMsg = Message.readMessage(in);
 
-                    // 응답 처리
                     if (rxMsg.getType() == Packet.RESULT) {
                         if (rxMsg.getDetail() == Packet.SUCCESS) {
                             String[] certificates = rxMsg.getData().split(";");
                             if (certificates.length > 0) {
                                 for (String cert : certificates) {
                                     String[] parts = cert.split(",");
-                                    if (parts.length >= 3) {
-                                        System.out.println("학생 ID: " + parts[0]);
-                                        System.out.println("제출일: " + parts[1]);
-                                        System.out.println("---------------");
+                                    System.out.println("학생 ID: " + parts[0]);
+                                    System.out.println("제출일: " + parts[1]);
+                                    System.out.println("---------------");
+                                }
+
+                                // 다운로드 여부 확인
+                                System.out.print("진단서 파일을 다운로드하시겠습니까? (Y/N): ");
+                                String answer = br.readLine().trim().toUpperCase();
+
+                                if (answer.equals("Y")) {
+                                    System.out.print("저장할 디렉토리 경로를 입력하세요: ");
+                                    String savePath = br.readLine().trim();
+
+                                    // 다운로드 요청
+                                    String downloadData = "DOWNLOAD," + savePath;
+                                    txMsg = Message.makeMessage(Packet.REQUEST,
+                                            Packet.SUBMIT_CERTIFICATE,
+                                            Packet.NOT_USED,
+                                            downloadData);
+                                    packet = Packet.makePacket(txMsg);
+                                    out.write(packet);
+                                    out.flush();
+
+                                    rxMsg = Message.readMessage(in);
+                                    if (rxMsg.getDetail() == Packet.SUCCESS) {
+                                        System.out.println("모든 진단서가 다운로드되었습니다.");
+                                    } else {
+                                        System.out.println("다운로드 실패: " + rxMsg.getData());
                                     }
                                 }
                             } else {
@@ -291,45 +260,8 @@ public class Client {
                         }
                     }
                     break;
-                case 8: // 퇴사 신청자 조회 및 환불
-                    System.out.println("=== 퇴사 신청자 조회 및 환불 ===");
-                    txMsg = Message.makeMessage(Packet.REQUEST,
-                            Packet.PROCESS_WITHDRAWAL,
-                            Packet.NOT_USED,
-                            "퇴사 신청자 조회 요청");
-                    packet = Packet.makePacket(txMsg);
-                    out.write(packet);
-                    out.flush();
 
-                    // 서버로부터 응답 수신
-                    rxMsg = new Message();
-                    header = new byte[Packet.LEN_HEADER];
-                    in.read(header);
-                    Message.makeMessageHeader(rxMsg, header);
-                    body = new byte[rxMsg.getLength()];
-                    in.read(body);
-                    Message.makeMessageBody(rxMsg, body);
-
-                    // 응답 처리
-                    if (rxMsg.getType() == Packet.RESULT) {
-                        if (rxMsg.getDetail() == Packet.SUCCESS) {
-                            String[] withdraws = rxMsg.getData().split(";");
-                            for (String withdraw : withdraws) {
-                                String[] parts = withdraw.split(",");
-                                System.out.println("학생 ID: " + parts[0]);
-                                System.out.println("퇴사일: " + parts[1]);
-                                System.out.println("은행명: " + parts[2]);
-                                System.out.println("계좌번호: " + parts[3]);
-                                System.out.println("환불금액: " + parts[4]);
-                                System.out.println("---------------");
-                            }
-                        } else {
-                            System.out.println(rxMsg.getData());
-                        }
-                    }
-                    break;
-
-                case 0: // 종료
+                case 0:
                     return;
             }
         }

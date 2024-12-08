@@ -8,6 +8,8 @@ import dao.RoomDAO;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
@@ -43,7 +45,6 @@ public class Threads extends Thread {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
 
-            // 초기 로그인 요청 메시지 전송
             txMsg = Message.makeMessage(Packet.REQUEST, Packet.Login, Packet.NOT_USED, "Login Request");
             packet = Packet.makePacket(txMsg);
             out.write(packet);
@@ -85,7 +86,7 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
-                            case Packet.PROCESS_WITHDRAWAL: // 퇴사 신청자 조회 및 환불
+                            case Packet.PROCESS_WITHDRAWAL:
                                 System.out.println("퇴사 신청자 조회 시작");
                                 WithdrawService withdrawService = new WithdrawService();
                                 String withdrawData = withdrawService.getWithdrawAndRefundData();
@@ -105,31 +106,69 @@ public class Threads extends Thread {
                                 out.write(packet);
                                 out.flush();
                                 break;
-                            case Packet.SUBMIT_CERTIFICATE: //결핵진단서 제출 확인
+
+                            case Packet.SUBMIT_CERTIFICATE:
                                 String[] certParts = rxMsg.getData().split(",");
-                                int studentId = Integer.parseInt(certParts[0]);
-                                byte[] fileData = Base64.getDecoder().decode(certParts[1]);
-                                String fileName = certParts[2];
-                                String fileType = certParts[3];
 
-                                TuberculosisDTO cert = new TuberculosisDTO();
-                                cert.setStudentId(studentId);
-                                cert.setImageData(fileData);
-                                cert.setFileName(fileName);
-                                cert.setFileType(fileType);
+                                // 다운로드 요청 처리
+                                if (certParts[0].equals("DOWNLOAD")) {
+                                    String savePath = certParts[1];
+                                    List<TuberculosisDTO> allCertificates = tuberculosisService.getCertificates();
+                                    boolean downloadSuccess = true;
+                                    String errorMessage = "";
 
-                                String submitResult = tuberculosisService.submitCertificate(cert);
+                                    for (TuberculosisDTO certDTO : allCertificates) {
+                                        try {
+                                            if (certDTO.getImageData() != null) {
+                                                String fileName = certDTO.getStudentId() + "_" + certDTO.getFileName();
+                                                String filePath = savePath + File.separator + fileName;
+                                                Files.write(Paths.get(filePath), certDTO.getImageData());
+                                            }
+                                        } catch (IOException e) {
+                                            downloadSuccess = false;
+                                            errorMessage = e.getMessage();
+                                            break;
+                                        }
+                                    }
 
-                                if (submitResult.equals("제출 성공")) {
-                                    txMsg = Message.makeMessage(Packet.RESULT,
-                                            Packet.SUBMIT_CERTIFICATE,
-                                            Packet.SUCCESS,
-                                            submitResult);
-                                } else {
-                                    txMsg = Message.makeMessage(Packet.RESULT,
-                                            Packet.SUBMIT_CERTIFICATE,
-                                            Packet.FAIL,
-                                            submitResult);
+                                    if (downloadSuccess) {
+                                        txMsg = Message.makeMessage(Packet.RESULT,
+                                                Packet.SUBMIT_CERTIFICATE,
+                                                Packet.SUCCESS,
+                                                "모든 진단서 다운로드 완료");
+                                    } else {
+                                        txMsg = Message.makeMessage(Packet.RESULT,
+                                                Packet.SUBMIT_CERTIFICATE,
+                                                Packet.FAIL,
+                                                "다운로드 실패: " + errorMessage);
+                                    }
+                                }
+                                // 제출 처리
+                                else {
+                                    int studentId = Integer.parseInt(certParts[0]);
+                                    byte[] fileData = Base64.getDecoder().decode(certParts[1]);
+                                    String fileName = certParts[2];
+                                    String fileType = certParts[3];
+
+                                    TuberculosisDTO cert = new TuberculosisDTO();
+                                    cert.setStudentId(studentId);
+                                    cert.setImageData(fileData);
+                                    cert.setFileName(fileName);
+                                    cert.setFileType(fileType);
+
+                                    String submitResult = tuberculosisService.submitCertificate(cert);
+
+                                    if (submitResult.equals("성공")) {
+                                        txMsg = Message.makeMessage(Packet.RESULT,
+                                                Packet.SUBMIT_CERTIFICATE,
+                                                Packet.SUCCESS,
+                                                "제출 성공");
+                                    } else {
+                                        txMsg = Message.makeMessage(Packet.RESULT,
+                                                Packet.SUBMIT_CERTIFICATE,
+                                                Packet.FAIL,
+                                                submitResult);
+                                    }
                                 }
                                 packet = Packet.makePacket(txMsg);
                                 out.write(packet);
@@ -150,10 +189,8 @@ public class Threads extends Thread {
                                 break;
 
                             case Packet.REGISTER_SCHEDULE:
-                                // 관리자의 일정 등록 처리
                                 String scheduleData = rxMsg.getData();
                                 try {
-                                    // scheduleData 파싱 (형식: periodName,startDate,endDate)
                                     String[] parts = scheduleData.split(",");
                                     if (parts.length != 3) {
                                         throw new IllegalArgumentException("잘못된 데이터 형식");
@@ -162,7 +199,6 @@ public class Threads extends Thread {
                                     ScheduleDTO newSchedule = new ScheduleDTO();
                                     newSchedule.setPeriodName(parts[0]);
 
-// 날짜와 시간 분리
                                     String[] startDateTime = parts[1].split(" ");
                                     String[] endDateTime = parts[2].split(" ");
 
@@ -170,7 +206,7 @@ public class Threads extends Thread {
                                     newSchedule.setStartHour(startDateTime[1]);
                                     newSchedule.setEndDate(endDateTime[0]);
                                     newSchedule.setEndHour(endDateTime[1]);
-                                    // 서비스를 통해 일정 등록
+
                                     boolean success = scheduleService.registerSchedule(newSchedule);
 
                                     if (success) {
@@ -188,14 +224,12 @@ public class Threads extends Thread {
                                     }
 
                                 } catch (IllegalArgumentException e) {
-                                    // 데이터 형식 오류
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_SCHEDULE,
                                             Packet.FAIL,
                                             "입력 데이터 형식이 잘못되었습니다.");
                                     System.err.println("Data format error: " + e.getMessage());
                                 } catch (Exception e) {
-                                    // 기타 예외 처리
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_SCHEDULE,
                                             Packet.FAIL,
@@ -203,25 +237,17 @@ public class Threads extends Thread {
                                     System.err.println("Unexpected error: " + e.getMessage());
                                 }
 
-                                // 결과 전송
                                 packet = Packet.makePacket(txMsg);
                                 out.write(packet);
                                 out.flush();
                                 break;
+
                             case Packet.REGISTER_FEE:
                                 String feeData = rxMsg.getData();
-                                // feeData 파싱 (형식: dormitoryName,dormitoryUsageFee,dormitoryMealFee)
                                 String[] parts = feeData.split(",");
-                                // DTO 생성 및 설정
-                                // 1 : 푸름관 1동
-                                // 2 : 푸름관 2동
-                                // 3: 푸름관 3동
-                                // 4 : 푸름관 4동
-                                // 5 : 오름관 1동
-                                // 6 : 오름관 2동
-                                // 7 : 오름관 3동
                                 RoomDTO roomDTO = new RoomDTO();
                                 MealDTO mealDTO = new MealDTO();
+
                                 if(parts[0].equals("푸름관1동")){
                                     roomDTO.setDormitoryId(1);
                                     mealDTO.setDormitoryId(1);
@@ -249,27 +275,26 @@ public class Threads extends Thread {
                                 mealDTO.setFee(Integer.parseInt(parts[2]));
                                 boolean roomSuccess = roomService.registerRoom(roomDTO);
                                 boolean mealSuccess = mealService.registerMeal(mealDTO);
+
                                 if (roomSuccess & mealSuccess) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_FEE,
                                             Packet.SUCCESS,
                                             "생활관 사용료 및 급식비 등록이 완료되었습니다.");
-                                    System.out.println("Schedule registered successfully: ");
+                                    System.out.println("Fee registered successfully");
                                 } else {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_FEE,
                                             Packet.FAIL,
                                             "생활관 사용료 및 급식비 등록에 실패했습니다.");
-                                    System.out.println("Schedule registration failed");
+                                    System.out.println("Fee registration failed");
                                 }
-                                // 결과 전송
                                 packet = Packet.makePacket(txMsg);
                                 out.write(packet);
                                 out.flush();
                                 break;
                         }
                         break;
-
 
                     case Packet.RESPONSE:
                         System.out.println("로그인 응답 정보 도착");
@@ -284,7 +309,7 @@ public class Threads extends Thread {
                                     String.valueOf(user.getPassword()).equals(password);
 
                             if(loginSuccess) {
-                                String responseData = user.getId() + "," +user.getRole();
+                                String responseData = user.getId() + "," + user.getRole();
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.Login,
                                         Packet.SUCCESS, responseData);
                                 System.out.println("User " + id + " logged in successfully");

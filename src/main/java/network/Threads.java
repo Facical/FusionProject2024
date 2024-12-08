@@ -5,9 +5,6 @@ import dto.*;
 import service.*;
 import common.Packet;
 
-
-
-
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -67,8 +64,6 @@ public class Threads extends Thread {
         this.applicationDAO = new ApplicationDAO();
         this.roomDAO = new RoomDAO();
         this.mealDAO = new MealDAO();
-        this.roomService = new RoomService();
-        this.mealService = new MealService();
         this.applicationService = new ApplicationService();
         this.applicationPreferenceService = new ApplicationPreferenceService();
         this.studentService = new StudentService();

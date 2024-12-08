@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 import dao.ApplicationPreferenceDAO;
 import dto.ApplicationPreferenceDTO;

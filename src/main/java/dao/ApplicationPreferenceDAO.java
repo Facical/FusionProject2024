@@ -32,7 +32,8 @@ public class ApplicationPreferenceDAO {
                 applicationPreferenceDTO = new ApplicationPreferenceDTO();
                 applicationPreferenceDTO.setApplication_preference_id(rs.getInt("application_preference_id"));
                 applicationPreferenceDTO.setApplication_id(rs.getInt("application_id"));
-                applicationPreferenceDTO.setPreference_order(rs.getInt("preference_order"));
+                applicationPreferenceDTO.setPreference_first(rs.getInt("preference_first"));
+                applicationPreferenceDTO.setPreference_second(rs.getInt("preference_second"));
                 applicationPreferenceDTO.setDormitory_id(rs.getInt("dormitory_id"));
                 applicationPreferenceDTO.setMeal_id(rs.getInt("meal_id"));
             }
@@ -74,7 +75,7 @@ public class ApplicationPreferenceDAO {
         } finally {
             closeResources(conn, pstmt, null);
         }
-}
+    }
 
         private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {

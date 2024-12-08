@@ -15,6 +15,7 @@ public class ApplicationPreferenceDAO {
 
         Connection conn = null;
         PreparedStatement pstmt = null;
+
     public ApplicationPreferenceDTO getApplicationPreference(int application_id) {
         Connection conn = null;
         PreparedStatement pstmt = null;

@@ -86,6 +86,7 @@ public class Client {
                                 this.studentId = userId;
                                 loggedInUserId = userId;
                                 studentRun();
+                                return;
                             } else if (userRole.equals("관리자")) {
                                 adminRun();
                                 return;

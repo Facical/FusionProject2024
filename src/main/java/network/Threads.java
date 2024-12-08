@@ -35,8 +35,8 @@ public class Threads extends Thread {
     private RoomDAO roomDAO;
     private MealDAO mealDAO;
     private ScheduleService scheduleService;
-//    private RoomService roomService;
-//    private MealService mealService;
+    private RoomService roomService;
+    private MealService mealService;
     private ApplicationService applicationService;
     private ApplicationPreferenceService applicationPreferenceService;
     private StudentService studentService;
@@ -55,8 +55,8 @@ public class Threads extends Thread {
         this.userDAO = new UserDAO();
         this.scheduleService = new ScheduleService();
         this.tuberculosisService = new TuberculosisService();
-    //    this.roomService = new RoomService();
-    //    this.mealService = new MealService();
+        this.roomService = new RoomService();
+        this.mealService = new MealService();
         this.scheduleDAO = new ScheduleDAO();
         this.withdrawDAO = new WithdrawDAO();
         this.admissionDAO = new AdmissionDAO();
@@ -158,6 +158,78 @@ public class Threads extends Thread {
                                 }
                                 break;
 
+                            case Packet.APPLY_ADMISSION:
+                                String admissionData = rxMsg.getData();
+                                String[] admissionParts = admissionData.split(",");
+                                //firstDormitory + "," + firstDormitoryMeal + "," + secondDormitory + "," + secondDormitoryMeal;
+                                applicationDTO = new ApplicationDTO();
+                                ApplicationPreferenceDTO applicationPreferenceDTO = new ApplicationPreferenceDTO();
+
+                                applicationDTO.setStudentId(loggedInUserId);
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                                applicationDTO.setApplicationDate(LocalDate.now().format(formatter));
+                                boolean applicationSuccess = applicationService.applyAdmission(applicationDTO);
+
+                                //applicationPreference
+                                // application.getApplicationId();
+                                // 2번 연속 등록 시도 해야함. getApplication_id를 잘 가져오는지.
+                                // !! setApplication_id의 값은 방금 정의한 application_id의 값을 대입해야함.
+                                // 현재 안됨. 임시로 1로 해둠.
+
+                                int applicationId = applicationService.findApplicationId(loggedInUserId);
+
+                                applicationPreferenceDTO.setApplication_id(applicationId);
+                                if(admissionParts[0].equals("푸름관1동")){
+                                    applicationPreferenceDTO.setPreference_first(1);
+                                }else if(admissionParts[0].equals("푸름관2동")){
+                                    applicationPreferenceDTO.setPreference_first(2);
+                                }else if(admissionParts[0].equals("푸름관3동")){
+                                    applicationPreferenceDTO.setPreference_first(3);
+                                }else if(admissionParts[0].equals("푸름관4동")){
+                                    applicationPreferenceDTO.setPreference_first(4);
+                                }else if(admissionParts[0].equals("오름관1동")){
+                                    applicationPreferenceDTO.setPreference_first(5);
+                                }else if(admissionParts[0].equals("오름관2동")){
+                                    applicationPreferenceDTO.setPreference_first(6);
+                                }else if(admissionParts[0].equals("오름관3동")){
+                                    applicationPreferenceDTO.setPreference_first(7);
+                                }
+
+                                applicationPreferenceDTO.setMeal_first(admissionParts[1]);
+                                if(admissionParts[2].equals("푸름관1동")){
+                                    applicationPreferenceDTO.setPreference_second(1);
+                                }else if(admissionParts[2].equals("푸름관2동")){
+                                    applicationPreferenceDTO.setPreference_second(2);
+                                }else if(admissionParts[2].equals("푸름관3동")){
+                                    applicationPreferenceDTO.setPreference_second(3);
+                                }else if(admissionParts[2].equals("푸름관4동")){
+                                    applicationPreferenceDTO.setPreference_second(4);
+                                }else if(admissionParts[2].equals("오름관1동")){
+                                    applicationPreferenceDTO.setPreference_second(5);
+                                }else if(admissionParts[2].equals("오름관2동")){
+                                    applicationPreferenceDTO.setPreference_second(6);
+                                }else if(admissionParts[2].equals("오름관3동")){
+                                    applicationPreferenceDTO.setPreference_second(7);
+                                }
+                                applicationPreferenceDTO.setMeal_second(admissionParts[3]);
+                                boolean applicationPreferenceSuccess = applicationPreferenceService.applyPreference(applicationPreferenceDTO);
+                                if (applicationSuccess & applicationPreferenceSuccess) {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.APPLY_ADMISSION,
+                                            Packet.SUCCESS,
+                                            "입사 신청이 완료되었습니다.");
+                                    System.out.println("Admission apply successfully: ");
+                                } else {
+                                    txMsg = Message.makeMessage(Packet.RESULT,
+                                            Packet.APPLY_ADMISSION,
+                                            Packet.FAIL,
+                                            "입사 신청에 실패했습니다.");
+                                    System.out.println("Admission apply failed");
+                                }
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+                                break;
 
                             case Packet.PROCESS_WITHDRAWAL:
                                 System.out.println("퇴사 신청자 조회 시작");
@@ -190,7 +262,7 @@ public class Threads extends Thread {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));
                                     out.flush();
                                 }else {
-                                    ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+                                    applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
                                     WithdrawDTO withdraw = new WithdrawDTO();
                                     String data = rxMsg.getData();
@@ -424,10 +496,10 @@ public class Threads extends Thread {
 
                                 roomDTO.setFee(Integer.parseInt(parts[1]));
                                 mealDTO.setFee(Integer.parseInt(parts[2]));
-                                //boolean roomSuccess = roomService.registerRoom(roomDTO);
-                                //boolean mealSuccess = mealService.registerMeal(mealDTO);
+                                boolean roomSuccess = roomService.registerRoom(roomDTO);
+                                boolean mealSuccess = mealService.registerMeal(mealDTO);
 
-                                if (roomDTO != null && mealDTO != null) {
+                                if (roomSuccess && mealSuccess) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_FEE,
                                             Packet.SUCCESS,

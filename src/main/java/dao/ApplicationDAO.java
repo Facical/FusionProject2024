@@ -18,6 +18,10 @@ public class ApplicationDAO {
         ResultSet rs = null;
         ApplicationDTO applicationDTO = null;
 
+    /*public ApplicationDTO getAllApplicationInfo()
+    {
+
+    }*/
 
     public ApplicationDTO getApplicationInfo(int studentID){
         /*

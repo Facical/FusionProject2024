@@ -27,6 +27,7 @@ public class AdmissionDAO {
                 admission.setApplicationId(rs.getInt("application_id"));
                 admission.setRoomId(rs.getInt("room_id"));
                 //admission.setBedNumber(rs.getInt("bed_number"));
+                admission.setDormitoryId(rs.getInt("dormitory_id"));
 
                 // 날짜 타입은 ResultSet에서 java.sql.Date로 받아온 뒤 LocalDate로 변환
                 Date admissionDate = rs.getDate("admission_date");

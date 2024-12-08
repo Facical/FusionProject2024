@@ -16,12 +16,11 @@ public class StudentPaymentDAO {
     public List<StudentPaymentDTO> getPaidStudentList() {
         List<StudentPaymentDTO> paidStudents = new ArrayList<>();
         String sql = "SELECT s.name AS student_name, d.name AS dormitory_name " +
-                "FROM payment p " +
-                "JOIN admission a ON p.admission_id = a.admission_id " +
+                "FROM admission a " +
                 "JOIN student s ON a.student_id = s.student_id " +
                 "JOIN room r ON a.room_id = r.room_id " +
                 "JOIN dormitory d ON r.dormitory_id = d.dormitory_id " +
-                "WHERE p.payment_status = '납부 완료' " +
+                "WHERE a.payment_status = '납부 완료' " +
                 "ORDER BY d.name";
 
         try (Connection conn = ds.getConnection();
@@ -44,12 +43,11 @@ public class StudentPaymentDAO {
     public List<StudentPaymentDTO> getUnpaidStudentList() {
         List<StudentPaymentDTO> unpaidStudents = new ArrayList<>();
         String sql = "SELECT s.name AS student_name, d.name AS dormitory_name " +
-                "FROM payment p " +
-                "JOIN admission a ON p.admission_id = a.admission_id " +
+                "FROM admission a " +
                 "JOIN student s ON a.student_id = s.student_id " +
                 "JOIN room r ON a.room_id = r.room_id " +
                 "JOIN dormitory d ON r.dormitory_id = d.dormitory_id " +
-                "WHERE p.payment_status = '미납부' " +
+                "WHERE a.payment_status = '미납' " +
                 "ORDER BY d.name";
 
         try (Connection conn = ds.getConnection();

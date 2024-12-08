@@ -281,11 +281,11 @@ public class Client {
                     System.out.println("환불 받으실 은행 이름, 계좌 번호, 퇴사 신청 사유를 입력해주세요.");
                     System.out.print("환불 받으실 은행 이름: ");
                     //sc.nextLine();
-                    String bankName = sc.nextLine();
+                    String bankName = br.readLine();
                     System.out.print("계좌 번호: ");
-                    String accountNumber = sc.nextLine();
+                    String accountNumber = br.readLine();
                     System.out.print("퇴사 신청 사유: ");
-                    String reason = sc.nextLine();
+                    String reason = br.readLine();
 
                     newData = bankName + "," + accountNumber + "," + reason;
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.REQUEST_WITHDRAWAL, Packet.NOT_USED, newData)));
@@ -402,6 +402,7 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
+                    // 서버가 보내준 패킷 받아서 해석
                     rxMsg = new Message();
                     header = new byte[Packet.LEN_HEADER];
                     in.read(header);
@@ -409,8 +410,11 @@ public class Client {
                     body = new byte[rxMsg.getLength()];
                     in.read(body);
                     Message.makeMessageBody(rxMsg, body);
+                    System.out.println(rxMsg.getData());
 
+                    break;
                 case 4: // 2.4 기능
+                    break;
 
                 case 5: // 2.5 기능
                     System.out.println("=== 생활관 비용 납부자 조회 ===");
@@ -432,6 +436,8 @@ public class Client {
                     in.read(body);
                     Message.makeMessageBody(rxMsg, body);
 
+                    System.out.println(rxMsg.getData());
+                    break;
 
                 case 6: // 2.6 생활관 비용 미납부자 조회 기능
                     System.out.println("=== 생활관 비용 미납부자 조회 ===");
@@ -452,6 +458,9 @@ public class Client {
                     body = new byte[rxMsg.getLength()];
                     in.read(body);
                     Message.makeMessageBody(rxMsg, body);
+
+                    System.out.println(rxMsg.getData());
+                    break;
 
                 case 7:
                     System.out.println("=== 결핵진단서 제출 현황 ===");

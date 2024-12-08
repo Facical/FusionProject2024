@@ -129,14 +129,14 @@ public class Threads extends Thread {
                                     Message.printMessage(rxMsg);
 
 
-                                    if(rxMsg.getDetail() == Packet.SUCCESS){
+                                    if (rxMsg.getDetail() == Packet.SUCCESS) {
                                         admissionDTO.setPaymentStatus("납부 완료");
                                         admissionDAO.UpdatePaymentStatus(admissionDTO);
                                     }
 
 
                                     admissionDTO = admissionDAO.findAdmission(studentID);
-                                    if(admissionDTO.getPaymentStatus().equals("납부 완료")){
+                                    if (admissionDTO.getPaymentStatus().equals("납부 완료")) {
                                         txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.SUCCESS, "");
                                     } else if (admissionDTO.getPaymentStatus().equals("미납")) {
                                         txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.FAIL, "");
@@ -147,7 +147,6 @@ public class Threads extends Thread {
                                     out.flush();
                                 }
                                 break;
-
 
 
                             case Packet.PROCESS_WITHDRAWAL:
@@ -173,9 +172,9 @@ public class Threads extends Thread {
 
                             case Packet.REQUEST_WITHDRAWAL:
                                 LocalDate now = LocalDate.now();
-                                ApplicationDTO applicationDTO = applicationDAO.getApplicationInfo(studentID);
-                                AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
-                                ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+                                applicationDTO = applicationDAO.getApplicationInfo(studentID);
+                                admissionDTO = admissionDAO.findAdmission(studentID);
+                                applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
                                 if(admissionDTO == null){
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));

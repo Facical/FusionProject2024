@@ -15,14 +15,14 @@ public class WithdrawService {
         StringBuilder sb = new StringBuilder();
 
         for (WithdrawDTO withdraw : withdraws) {
-            List<RefundDTO> refunds = refundDAO.getRefundsByWithdrawId(withdraw.getWithdrawId());
+            List<RefundDTO> refunds = refundDAO.getRefundsByWithdrawId(withdraw.getWithdrawalId());
             int totalRefund = 0;
             for (RefundDTO refund : refunds) {
                 totalRefund += refund.getAmount();
             }
 
             sb.append(withdraw.getStudentId()).append(",")
-                    .append(withdraw.getWithdrawDate()).append(",")
+                    .append(withdraw.getWithdrawalDate()).append(",")
                     .append(withdraw.getBankName()).append(",")
                     .append(withdraw.getAccountNumber()).append(",")
                     .append(totalRefund).append(";");

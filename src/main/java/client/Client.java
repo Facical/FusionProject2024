@@ -87,6 +87,7 @@ public class Client {
                                 studentRun();
                             } else if (userRole.equals("관리자")) {
                                 adminRun();
+                                return;
                             }
                         }
                         break;
@@ -253,6 +254,12 @@ public class Client {
                     }
                 break;
                 case 0:
+                    System.out.println("프로그램을 종료합니다......");
+                    txMsg = Message.makeMessage(Packet.RESULT, Packet.NOT_USED,
+                            Packet.END_CONNECT, "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
                     return;
             }
         }
@@ -350,6 +357,12 @@ public class Client {
                     break;
 
                 case 0:
+                    System.out.println("프로그램을 종료합니다......");
+                    txMsg = Message.makeMessage(Packet.RESULT, Packet.NOT_USED,
+                            Packet.END_CONNECT, "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
                     return;
             }
         }

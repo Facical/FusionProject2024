@@ -21,7 +21,7 @@ public class ScheduleDAO { //DB 업데이트
             String sql = "SELECT * FROM selection_schedule WHERE schedule_id = 1";
             // String sql = "SELECT * FROM selection_schedule selection_schedule (period_name, start_date, end_date) VALUES (?, ?, ?)";
             pstmt = conn.prepareStatement(sql);  // 생성된 키 반환 설정
-            //pstmt.setInt(1, scheduleDTO.getScheduleId());
+            //pstmt.setInt(1, num);
             /*pstmt.setString(2, scheduleDTO.getPeriodName());
             pstmt.setString(3, scheduleDTO.getStartDate());
             pstmt.setString(4, scheduleDTO.getEndDate());*/

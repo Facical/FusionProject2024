@@ -35,6 +35,7 @@ public class UserDAO {
         return user;
     }
 
+
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {
             if (rs != null) rs.close();

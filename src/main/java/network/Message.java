@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+
 @Getter
 @Setter
 @ToString
@@ -35,6 +38,27 @@ public class Message{
         msg.setData(data);
         return msg;
     }
+
+    public static Message readMessage(DataInputStream in){
+        Message msg = new Message();
+        try{
+
+            byte[] header = new byte[Packet.LEN_HEADER];
+            in.read(header);
+            makeMessageHeader(msg, header);
+
+            byte[] body = new byte[msg.getLength()];
+            in.read(body);
+            makeMessageBody(msg, body);
+
+            return msg;
+
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+        return msg;
+    }
+
     public static void makeMessageHeader(Message msg, byte[] header){
         int index = 0;
         byte typeCodeByte = header[index];

@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 import dao.*;
 import dto.*;
@@ -20,7 +20,7 @@ public class AllocationService {
         admissionDAO = new AdmissionDAO();
     }
 
-    public void allocate() {
+    /*public void allocate() {
         // 1) 데이터 로딩
         Map<Integer, StudentDTO> studentMap = studentDAO.findAllStudentsAsMap();
         List<ApplicationDTO> applications = applicationDAO.findAllApplications();
@@ -104,7 +104,7 @@ public class AllocationService {
         }
 
         System.out.println("입사자 선발 및 배정 완료");
-    }
+    }*/
 
     private RoomDTO findAvailableRoom(List<RoomDTO> rooms) {
         for (RoomDTO r : rooms) {

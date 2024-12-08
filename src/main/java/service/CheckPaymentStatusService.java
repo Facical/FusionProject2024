@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 import dao.AdmissionDAO;
 import dto.AdmissionDTO;

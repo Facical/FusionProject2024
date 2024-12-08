@@ -19,11 +19,11 @@ public class MealDAO {
 
         try {
             conn = ds.getConnection();
-            String sql = "INSERT INTO meal (dormitory_id, name, fee) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO meal (dormitory_id, fee) VALUES (?, ?)";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, mealDTO.getDormitoryId());
-            pstmt.setString(2, mealDTO.getName());
-            pstmt.setInt(3, mealDTO.getFee());
+            pstmt.setInt(2, mealDTO.getFee());
+
 
             int result = pstmt.executeUpdate();
             return result > 0;

@@ -1,6 +1,7 @@
 package dao;
 
 import dto.DormitoryDTO;
+import dto.StudentDTO;
 import dto.UserDTO;
 
 import javax.sql.DataSource;
@@ -8,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DormitoryDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
@@ -35,6 +38,7 @@ public class DormitoryDAO {
         }
         return dormitoryDTO;
     }
+
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {
             if (rs != null) rs.close();

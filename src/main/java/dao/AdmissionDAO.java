@@ -1,7 +1,7 @@
 package dao;
 
-import dto.MealDTO;
-import dto.RoomDTO;
+import dto.AdmissionDTO;
+
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -9,35 +9,38 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class RoomDAO {
+public class AdmissionDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
-
-
-    public boolean registerRoom(RoomDTO roomDTO) {  // boolean 대신 int 반환
+    public boolean findCheckAdmission() {
         Connection conn = null;
         PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        AdmissionDTO admissionDTO = null;
 
         try {
             conn = ds.getConnection();
-            // room_number,room_type, capacity, 일단 제외
-            String sql = "INSERT INTO room (dormitory_id,fee) VALUES (?, ?)";
+            String sql = "SELECT * FROM admission WHERE application_id = ? AND room_id = ? AND admission_status = ?";
             pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, roomDTO.getDormitoryId());
-            pstmt.setInt(2, roomDTO.getFee());
+            pstmt.setInt(1, admissionDTO.getApplication_id());
+            pstmt.setInt(2, admissionDTO.getRoom_id());
+            pstmt.setString(3, admissionDTO.getAdmission_status());
+            rs = pstmt.executeQuery();
 
-
+            if (rs.next()) {
+                admissionDTO.setApplication_id(rs.getInt("application_id"));
+                admissionDTO.setRoom_id(rs.getInt("room_id"));
+                admissionDTO.setAdmission_status(rs.getString("admission_status"));
+            }
             int result = pstmt.executeUpdate();
             return result > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         } finally {
-            closeResources(conn, pstmt, null);
+            closeResources(conn, pstmt, rs);
         }
 
-
     }
-
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {
             if (rs != null) rs.close();

@@ -4,11 +4,9 @@ import dao.MealDAO;
 import dto.MealDTO;
 
 public class MealService {
-    private final MealDAO mealDAO;
+    private final MealDAO mealDAO = new MealDAO();
 
-    public MealService(MealDAO mealDAO){
-        this.mealDAO = mealDAO;
-    }
+
     public boolean registerMeal(MealDTO mealDTO){
         return mealDAO.registerMeal(mealDTO);
     }

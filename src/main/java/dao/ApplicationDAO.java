@@ -1,56 +1,56 @@
-// ScheduleDAO.java
 package dao;
 
-import dto.ScheduleDTO;
-import javax.sql.DataSource;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import dto.*;
 
-public class ScheduleDAO {
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+//APPLY_ADMISSION
+public class ApplicationDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
-    // 모든 선발 일정 조회
-    public List<ScheduleDTO> getAllSchedules() {
+
+    public int findApplicationId(int studentId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        List<ScheduleDTO> schedules = new ArrayList<>();
+        ApplicationDTO applicationDTO = null;
 
         try {
             conn = ds.getConnection();
-            String sql = "SELECT * FROM selection_schedule ORDER BY start_date";
+            String sql = "SELECT application_id FROM application WHERE student_id = ?";
             pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, studentId);
+
             rs = pstmt.executeQuery();
 
-            while (rs.next()) {
-                ScheduleDTO schedule = new ScheduleDTO();
-                schedule.setScheduleId(rs.getInt("schedule_id"));
-                schedule.setPeriodName(rs.getString("period_name"));
-                schedule.setStartDate(rs.getTimestamp("start_date").toString());
-                schedule.setEndDate(rs.getTimestamp("end_date").toString());
-                schedules.add(schedule);
+            if (rs.next()) {
+                applicationDTO = new ApplicationDTO();
+                applicationDTO.setApplication_id(rs.getInt("application_id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             closeResources(conn, pstmt, rs);
         }
-        return schedules;
+        return applicationDTO.getApplication_id();
     }
 
-    // 선발 일정 등록
-    public boolean registerSchedule(ScheduleDTO schedule) {
+    public boolean applyAdmission(ApplicationDTO applicationDTO) {  // boolean 대신 int 반환
         Connection conn = null;
         PreparedStatement pstmt = null;
 
         try {
             conn = ds.getConnection();
-            String sql = "INSERT INTO selection_schedule (period_name, start_date, end_date) VALUES (?, ?, ?)";
+            // room_number,room_type, capacity, 일단 제외
+            String sql = "INSERT INTO application (student_id,application_date) VALUES (?, ?)";
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, schedule.getPeriodName());
-            pstmt.setString(2, schedule.getStartDate());
-            pstmt.setString(3, schedule.getEndDate());
+            pstmt.setInt(1, applicationDTO.getStudent_id());
+            pstmt.setString(2, applicationDTO.getApplication_date());
+
 
             int result = pstmt.executeUpdate();
             return result > 0;
@@ -60,6 +60,8 @@ public class ScheduleDAO {
         } finally {
             closeResources(conn, pstmt, null);
         }
+
+
     }
 
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {

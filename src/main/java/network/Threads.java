@@ -459,6 +459,12 @@ public class Threads extends Thread {
                             out.flush();
                         }
                         break;
+
+                    case Packet.RESULT:
+                        if(Packet.END_CONNECT == rxMsg.getDetail()){
+                        return;
+                        }
+                        break;
                 }
             }
         } catch (IOException e) {

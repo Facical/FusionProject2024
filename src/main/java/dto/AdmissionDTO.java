@@ -10,6 +10,7 @@ import java.time.LocalDate;
 public class AdmissionDTO {
     private int admissionId;
     private int applicationId;
+    private int studentId;
     private int roomId;
     private int bedNumber;
     private LocalDate admissionDate;
@@ -17,5 +18,5 @@ public class AdmissionDTO {
     private LocalDate residenceEndDate;
     private String admissionStatus;     // '입사', '입사 취소'
     private String certificateStatus;   // '제출 완료', '미제출'
-    private String paymentStatus;       // '납부 완료', '미납부'
+    private String paymentStatus;       // '납부', '미납부'
 }

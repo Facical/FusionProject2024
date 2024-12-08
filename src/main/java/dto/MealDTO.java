@@ -5,6 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+
 public class MealDTO {
     private int mealId;
     private int dormitoryId;

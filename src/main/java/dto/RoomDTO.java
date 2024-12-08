@@ -1,6 +1,5 @@
 package dto;
 
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,5 +12,4 @@ public class RoomDTO {
     private String roomType;
     private int capacity;
     private int fee;
-
 }

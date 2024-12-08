@@ -5,6 +5,9 @@ import service.*;
 import common.Packet;
 import dao.UserDAO;
 import dao.RoomDAO;
+import dao.*;
+import dto.*;
+
 
 import java.io.*;
 import java.net.Socket;
@@ -14,11 +17,23 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.Period;
+
+import static java.lang.Integer.parseInt;
 
 public class Threads extends Thread {
     private Socket socket;
     private UserDTO userDTO;
     private UserDAO userDAO;
+    private ScheduleDAO scheduleDAO;
+    private ScheduleDTO scheduleDTO;
+    private WithdrawDAO withdrawDAO;
+    private AdmissionDAO admissionDAO;
+    private ApplicationPreferenceDAO applicationPreferenceDAO;
+    private ApplicationDAO applicationDAO;
+    private RoomDAO roomDAO;
+    private MealDAO mealDAO;
     private ScheduleService scheduleService;
     private TuberculosisService tuberculosisService;
     private RoomService roomService;
@@ -38,27 +53,33 @@ public class Threads extends Thread {
         this.tuberculosisService = new TuberculosisService();
         this.roomService = new RoomService();
         this.mealService = new MealService();
+        this.scheduleDAO = new ScheduleDAO();
+        this.withdrawDAO = new WithdrawDAO();
+        this.admissionDAO = new AdmissionDAO();
+        this.applicationPreferenceDAO = new ApplicationPreferenceDAO();
+        this.applicationDAO = new ApplicationDAO();
+        this.roomDAO = new RoomDAO();
+        this.mealDAO = new MealDAO();
     }
 
     public void run() {
         try {
+            int studentID = 0;
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
 
+            //나중에 지우기
             txMsg = Message.makeMessage(Packet.REQUEST, Packet.Login, Packet.NOT_USED, "Login Request");
             packet = Packet.makePacket(txMsg);
             out.write(packet);
             out.flush();
 
+
             while(true) {
-                rxMsg = new Message();
-                header = new byte[Packet.LEN_HEADER];
-                in.read(header);
-                Message.makeMessageHeader(rxMsg, header);
-                body = new byte[rxMsg.getLength()];
-                in.read(body);
-                Message.makeMessageBody(rxMsg, body);
+
+                Message rxMsg = Message.readMessage(in);
                 Message.printMessage(rxMsg);
+
                 byte type = rxMsg.getType();
 
                 switch(type) {
@@ -86,6 +107,49 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
+                            case Packet.CHECK_PAY_DORMITORY:
+                                ApplicationDTO applicationDTO = applicationDAO.getApplicationInfo(studentID);
+                                AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
+                                ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+
+                                if(admissionDTO == null){
+                                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "합격 대상자가 아닙니다.")));
+                                    out.flush();
+                                }else {
+                                    RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
+                                    MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
+                                    int totalFee = roomDTO.getFee() + mealDTO.getFee();
+
+                                    String data = roomDTO.getFee() + "," + mealDTO.getFee() + "," + totalFee + "," + admissionDTO.getPaymentStatus();
+
+                                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, data)));
+                                    out.flush();
+
+                                    rxMsg = Message.readMessage(in);
+                                    Message.printMessage(rxMsg);
+
+
+                                    if(rxMsg.getDetail() == Packet.SUCCESS){
+                                        admissionDTO.setPaymentStatus("납부 완료");
+                                        admissionDAO.UpdatePaymentStatus(admissionDTO);
+                                    }
+
+
+                                    admissionDTO = admissionDAO.findAdmission(studentID);
+                                    if(admissionDTO.getPaymentStatus().equals("납부 완료")){
+                                        txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.SUCCESS, "");
+                                    } else if (admissionDTO.getPaymentStatus().equals("미납")) {
+                                        txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.FAIL, "");
+                                    }
+
+                                    packet = Packet.makePacket(txMsg);
+                                    out.write(packet);
+                                    out.flush();
+                                }
+                                break;
+
+
+
                             case Packet.PROCESS_WITHDRAWAL:
                                 System.out.println("퇴사 신청자 조회 시작");
                                 WithdrawService withdrawService = new WithdrawService();
@@ -106,6 +170,79 @@ public class Threads extends Thread {
                                 out.write(packet);
                                 out.flush();
                                 break;
+
+                            case Packet.REQUEST_WITHDRAWAL:
+                                LocalDate now = LocalDate.now();
+                                ApplicationDTO applicationDTO = applicationDAO.getApplicationInfo(studentID);
+                                AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
+                                ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
+
+                                if(admissionDTO == null){
+                                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));
+                                    out.flush();
+                                }else {
+                                    WithdrawDTO withdraw = new WithdrawDTO();
+                                    String data = rxMsg.getData();
+
+                                    String[] parts = data.split(",");
+                                    String bankName = parts[0];
+                                    String accountNumber = parts[1];
+                                    String reason = parts[2];
+
+                                    withdraw.setStudentId(studentID);
+                                    withdraw.setApplicationDate(now.toString());
+
+                                    //퇴사 상태
+                                    RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
+                                    MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
+                                    int totalFee = roomDTO.getFee() + mealDTO.getFee();
+
+                                    if(now.isBefore(admissionDTO.getResidenceStartDate())){
+                                        withdraw.setWithdrawalType("입사 전");
+                                        //환불 금액
+                                        withdraw.setRefundAmount(totalFee);
+                                    }
+                                    else{
+                                        Period remainPeriod = Period.between(now, admissionDTO.getResidenceEndDate());
+                                        Period totalPeriod = Period.between(admissionDTO.getResidenceStartDate(), admissionDTO.getResidenceEndDate());
+                                        withdraw.setWithdrawalType("입사 후");
+
+                                        //환불 금액
+                                        int date = remainPeriod.getYears() * 365 + remainPeriod.getMonths() * 30 + remainPeriod.getDays();
+                                        int totalDate = totalPeriod.getYears() * 365 + totalPeriod.getMonths() * 30 + totalPeriod.getDays();
+                                        int fee = (totalFee / totalDate) * date;
+                                        withdraw.setRefundAmount(fee);
+                                    }
+
+
+                                    withdraw.setBankName(bankName);
+                                    withdraw.setAccountNumber(parseInt(accountNumber));
+
+                                    withdraw.setWithdrawalStatus("취소");
+                                    withdraw.setReason(reason);
+                                    //생활관 아이디
+                                    withdraw.setDormitoryId(applicationPreferenceDTO.getDormitory_id());
+
+                                    withdrawDAO.setWithdrawInfo(withdraw);
+
+                                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.SUCCESS, "")));
+                                    out.flush();
+                                }
+                                break;
+                            case Packet.CHECK_REFUND:
+                                WithdrawDTO withdraw;
+                                withdraw = withdrawDAO.getWithdrawInfo(studentID);
+
+                                if(withdraw == null){
+                                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.FAIL, "환불 신청을 하지 않았거나 대상자가 아닙니다.")));
+                                    out.flush();
+                                }else{
+                                    String newData = withdraw.getWithdrawalStatus();
+                                    out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.SUCCESS, newData)));
+                                    out.flush();
+                                }
+                                break;
+
 
                             case Packet.SUBMIT_CERTIFICATE:
                                 String[] certParts = rxMsg.getData().split(",");

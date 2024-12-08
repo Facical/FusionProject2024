@@ -41,6 +41,7 @@ public class Packet{
     public static final byte NOT_USED = 0;
     public static final byte SUCCESS = 1;
     public static final byte FAIL = 2;
+    public static final byte END_CONNECT = 3;
 
     private byte[] packet;
     private int dataLength = 0;

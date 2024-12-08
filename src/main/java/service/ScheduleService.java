@@ -4,7 +4,7 @@ package service;
 import dao.ScheduleDAO;
 import dto.ScheduleDTO;
 import java.util.List;
-//dddddㅇㅇ
+
 public class ScheduleService {
     private final ScheduleDAO scheduleDAO = new ScheduleDAO();
 

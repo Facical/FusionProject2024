@@ -6,7 +6,6 @@ import dto.WithdrawDTO;
 import dto.RefundDTO;
 import java.util.List;
 
-//dddㅇㅇ
 public class WithdrawService {
     private final WithdrawDAO withdrawDAO = new WithdrawDAO();
     private final RefundDAO refundDAO = new RefundDAO();

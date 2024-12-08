@@ -2,7 +2,7 @@ package service;
 
 import dao.RoomDAO;
 import dto.RoomDTO;
-//ddddㅇㅇ
+
 public class RoomService {
     private final RoomDAO roomDAO = new RoomDAO();
     public RoomDTO getRoomInfo(int dormitory_id){

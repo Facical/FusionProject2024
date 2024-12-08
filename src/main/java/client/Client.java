@@ -416,6 +416,10 @@ public class Client {
                     System.out.print(dormitoryName + "의 7일식 급식비를 입력하세요 : ");
                     String sevenMealFee = br.readLine();
                     String newData = dormitoryName + "," + dormitoryUsageFee + "," + fiveMealFee + "," + sevenMealFee;
+                    // 오름관2동이나 3동이면 "선택안함" 항목의 급식비 0을 포함
+                    if (dormitoryName.equals("오름관2동") || dormitoryName.equals("오름관3동")) {
+                        newData += ",0"; // "선택안함" 급식비 0 추가
+                    }
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.REGISTER_FEE,
                             Packet.NOT_USED, newData);
@@ -423,14 +427,6 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
-                    // "오름관2동" 또는 "오름관3동"인 경우 "선택안함"을 추가 삽입
-                    if (dormitoryName.equals("오름관2동") || dormitoryName.equals("오름관3동")) {
-                        String newDataForNone = dormitoryName + ",0,0,0";  // "선택안함" 급식비 0으로 설정
-                        txMsg = Message.makeMessage(Packet.REQUEST, Packet.REGISTER_FEE, Packet.NOT_USED, newDataForNone);
-                        packet = Packet.makePacket(txMsg);
-                        out.write(packet);
-                        out.flush();
-                    }
 
                     rxMsg = new Message();
                     header = new byte[Packet.LEN_HEADER];

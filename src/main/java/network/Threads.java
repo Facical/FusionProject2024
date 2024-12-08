@@ -484,6 +484,7 @@ public class Threads extends Thread {
                                 boolean roomSuccess = roomService.registerRoom(roomDTO);
 
                                 int dormitoryId = roomDTO.getDormitoryId();
+
                                 MealDTO mealDTO1 = new MealDTO(); // 7일식
                                 mealDTO1.setDormitoryId(dormitoryId);
                                 mealDTO1.setName("7일식");
@@ -493,21 +494,19 @@ public class Threads extends Thread {
                                 mealDTO2.setDormitoryId(dormitoryId);
                                 mealDTO2.setName("5일식");
                                 mealDTO2.setFee(Integer.parseInt(parts[2])); // fiveMealFee
-
                                 // Meal 등록
                                 boolean mealSuccess1 = mealService.registerMeal(mealDTO1);
                                 boolean mealSuccess2 = mealService.registerMeal(mealDTO2);
 
-                                // "오름관2동" 또는 "오름관3동"이 아닐 경우 "선택안함" 항목 추가 등록
-                                if (!parts[0].equals("오름관2동") && !parts[0].equals("오름관3동")) {
-                                    // "선택안함" 급식비 항목 추가
+                                // 선택안함 급식비 등록 (오름관2동이나 3동이 아닐 때만 추가)
+                                boolean mealSuccess3 = false;
+                                if (!(parts.length == 5 && Integer.parseInt(parts[4]) == 0)) {
                                     MealDTO mealDTO3 = new MealDTO();
                                     mealDTO3.setDormitoryId(dormitoryId);
                                     mealDTO3.setName("선택안함");
-                                    mealDTO3.setFee(0);  // 급식비 0원
+                                    mealDTO3.setFee(0); // 급식비 0원
 
-                                    // Meal 등록
-                                    boolean mealSuccess3 = mealService.registerMeal(mealDTO3);
+                                    mealSuccess3 = mealService.registerMeal(mealDTO3);
                                 }
 
                                 if (roomSuccess && mealSuccess1 && mealSuccess2) {
@@ -652,10 +651,12 @@ public class Threads extends Thread {
     }
     private int mapMealId(String dormitoryName, String mealType) {
         int dormitoryId = mapDormitoryToId(dormitoryName);
-        switch (mealType) {
-            case "7일식": return dormitoryId * 2 - 1; // 7일식은 홀수 ID
-            case "5일식": return dormitoryId * 2;     // 5일식은 짝수 ID
-            default: throw new IllegalArgumentException("Invalid meal type: " + mealType);
+        if(mealType.equals("선택안함")){
+            int mealId = mealService.getMealId(dormitoryId, "선택안함");
+            return mealId;
+        }else{
+            int mealId = mealService.getMealId(dormitoryId, mealType);
+            return mealId;
         }
     }
 

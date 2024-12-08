@@ -43,6 +43,29 @@ public class MealDAO {
 
         return mealDTO;
     }
+    public int getMealId(int dormitoryId, String mealName){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int mealId = -1;
+        try{
+            conn = ds.getConnection();
+            String sql = "SELECT meal_id FROM meal WHERE dormitory_id = ? AND name = ?";
+            pstmt = conn.prepareStatement(sql);
+            // PreparedStatement에 파라미터 설정
+            pstmt.setInt(1, dormitoryId);
+            pstmt.setString(2, mealName);
+            rs = pstmt.executeQuery();
+            if(rs.next()){
+                mealId = rs.getInt("meal_id");
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
+        }finally {
+            closeResources(conn, pstmt, rs);
+        }
+        return mealId;
+    }
 
     public boolean registerMeal(MealDTO mealDTO) {  // boolean 대신 int 반환
         Connection conn = null;

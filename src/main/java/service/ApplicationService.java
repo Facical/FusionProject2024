@@ -3,7 +3,7 @@ package service;
 import dao.ApplicationDAO;
 import dto.ApplicationDTO;
 
-//ddddddㅇㅇ
+
 public class ApplicationService {
     private final ApplicationDAO applicationDAO = new ApplicationDAO();
 

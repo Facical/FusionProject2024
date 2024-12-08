@@ -361,7 +361,7 @@ public class Client {
                         System.out.println("일정 등록 실패: " + rxMsg.getData());
                     }
                     break;
-                case 2: // 1.2 기능
+                case 2: // 2.2 기능
                     System.out.println("=== 생활관 사용료 및 급식비 등록 ===");
                     System.out.println("생활관 입력 :");
                     String dormitoryName = br.readLine();
@@ -392,13 +392,26 @@ public class Client {
                     }
                     break;
 
-                case 3: // 1.3 기능
+                case 3: // 2.3 기능
 
-                case 4: // 1.4 기능
+                case 4: // 2.4 기능
 
-                case 5: // 1.5 기능
+                case 5: // 2.5 기능
+                    System.out.println("=== 생활관 비용 납부자 조회 ===");
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.VIEW_PAID_STUDENTS,
+                            Packet.NOT_USED,
+                            "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+                    // 위에 까지가 조회 요청
 
-                case 6: // 1.6 기능
+                    // 조회 요청해서 서버가 DB 조회해서 뿌려주는 것
+                    rxMsg = Message.readMessage(in);
+
+                case 6: // 2.6 기능
+                    System.out.println("=== 생활관 비용 미납부자 조회 ===");
 
                 case 7:
                     System.out.println("=== 결핵진단서 제출 현황 ===");

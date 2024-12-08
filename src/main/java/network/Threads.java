@@ -546,6 +546,9 @@ public class Threads extends Thread {
                                 out.write(packet);
                                 out.flush();
                                 break;
+
+                            case Packet.VIEW_PAID_STUDENTS :
+
                         }
                         break;
 

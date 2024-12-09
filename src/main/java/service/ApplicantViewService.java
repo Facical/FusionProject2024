@@ -3,7 +3,7 @@ package service;
 import dto.ApplicantInfoDTO;
 
 import java.util.List;
-
+//dㅇㅇㅇㅇ
 public class ApplicantViewService {
     public static String ListToString(List<ApplicantInfoDTO> applicantInfoDTOList) {
         StringBuilder sb = new StringBuilder();

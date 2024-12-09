@@ -463,25 +463,52 @@ public class Threads extends Thread {
                                 String feeData = rxMsg.getData();
                                 String[] parts = feeData.split(",");
                                 RoomDTO roomDTO = new RoomDTO();
-
-                                if (parts[0].equals("푸름관1동")) {
-                                    roomDTO.setDormitoryId(1);
-                                } else if (parts[0].equals("푸름관2동")) {
-                                    roomDTO.setDormitoryId(2);
-                                } else if (parts[0].equals("푸름관3동")) {
-                                    roomDTO.setDormitoryId(3);
-                                } else if (parts[0].equals("푸름관4동")) {
-                                    roomDTO.setDormitoryId(4);
-                                } else if (parts[0].equals("오름관1동")) {
-                                    roomDTO.setDormitoryId(5);
-                                } else if (parts[0].equals("오름관2동")) {
-                                    roomDTO.setDormitoryId(6);
-                                } else if (parts[0].equals("오름관3동")) {
-                                    roomDTO.setDormitoryId(7);
+                                int dormitory_id = -1;
+                                int fee = Integer.parseInt(parts[1]);
+                                boolean updateSuccess = false;
+                                switch (parts[0]) {
+                                    case "푸름관1동":
+                                        dormitory_id = 1;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "푸름관2동":
+                                        dormitory_id = 2;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "푸름관3동":
+                                        dormitory_id = 3;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "푸름관4동":
+                                        dormitory_id = 4;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "오름관1동":
+                                        dormitory_id = 5;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "오름관2동":
+                                        dormitory_id = 6;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "오름관3동":
+                                        dormitory_id = 7;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
                                 }
-                                roomDTO.setFee(parseInt(parts[1]));
+                                if (dormitory_id > -1) {
+                                    updateSuccess = roomService.updateRoomFeeByDormitoryId(dormitory_id, fee);
+                                    if (updateSuccess) {
+                                        System.out.println("Fee successfully updated for dormitory ID: " + dormitory_id);
+                                    } else {
+                                        System.out.println("Failed to update fee for dormitory ID: " + dormitory_id);
+                                    }
+                                } else {
+                                    System.out.println("Invalid dormitory name: " + parts[0]);
+                                }
+
                                 //Room 등록
-                                boolean roomSuccess = roomService.registerRoom(roomDTO);
+//                                boolean roomSuccess = roomService.registerRoom(roomDTO);
 
                                 int dormitoryId = roomDTO.getDormitoryId();
 
@@ -509,7 +536,7 @@ public class Threads extends Thread {
                                     mealSuccess3 = mealService.registerMeal(mealDTO3);
                                 }
 
-                                if (roomSuccess && mealSuccess1 && mealSuccess2) {
+                                if (updateSuccess && mealSuccess1 && mealSuccess2) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_FEE,
                                             Packet.SUCCESS,

@@ -4,7 +4,7 @@ import dto.StudentPaymentDTO;
 
 
 import java.util.List;
-
+//dㅇㅇㅇㅇ
 public class StudentPaymentCheckService {
 
     public static String ListToString(List<StudentPaymentDTO> studentPaymentDTOList)

@@ -6,7 +6,7 @@ import dto.AdmissionDTO;
 import dto.ApplicationDTO;
 import dto.ApplicationPreferenceDTO;
 import dto.StudentDTO;
-
+//dㅇㅇ2
 public class AdmissionService {
     private final AdmissionDAO admissionDAO = new AdmissionDAO();
 

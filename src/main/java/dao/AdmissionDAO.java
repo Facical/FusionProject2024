@@ -82,6 +82,32 @@ public class AdmissionDAO {
         }
     }
 
+    public void saveAdmission(AdmissionDTO admission) {
+        String sql = "INSERT INTO admission " +
+                "(application_id, room_id, bed_number, admission_date, residence_start_date, residence_end_date, " +
+                " admission_status, certificate_status, payment_status, student_id) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = ds.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, admission.getApplicationId());
+            pstmt.setInt(2, admission.getRoomId());
+            pstmt.setInt(3, admission.getBedNumber());
+            pstmt.setDate(4, java.sql.Date.valueOf(admission.getAdmissionDate()));
+            pstmt.setDate(5, java.sql.Date.valueOf(admission.getResidenceStartDate()));
+            pstmt.setDate(6, java.sql.Date.valueOf(admission.getResidenceEndDate()));
+            pstmt.setString(7, admission.getAdmissionStatus());
+            pstmt.setString(8, admission.getCertificateStatus());
+            pstmt.setString(9, admission.getPaymentStatus());
+            pstmt.setInt(10, admission.getStudentId());
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {
             if (rs != null)  rs.close();

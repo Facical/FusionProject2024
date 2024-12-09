@@ -21,7 +21,7 @@ public class StudentPaymentDAO {
                 "JOIN student s ON a.student_id = s.student_id " +
                 "JOIN room r ON a.room_id = r.room_id " +
                 "JOIN dormitory d ON r.dormitory_id = d.dormitory_id " +
-                "WHERE p.payment_status = '납부 완료' " +
+                "WHERE a.payment_status = '납부 완료' " +
                 "ORDER BY d.name";
 
         try (Connection conn = ds.getConnection();

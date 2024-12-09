@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.*;
+import java.util.*;
 
 public class RoomDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
@@ -30,7 +31,7 @@ public class RoomDAO {
                 roomDTO = new RoomDTO();
                 roomDTO.setRoomId(rs.getInt("room_id"));
                 roomDTO.setDormitoryId(rs.getInt("dormitory_id"));
-                roomDTO.setRoomNumber(rs.getString("room_number"));
+                roomDTO.setRoomNumber(rs.getInt("room_number"));
                 roomDTO.setRoomType(rs.getString("room_type"));
                 roomDTO.setCapacity(rs.getInt("capacity"));
                 roomDTO.setFee(rs.getInt("fee"));
@@ -69,9 +70,68 @@ public class RoomDAO {
 
     }
 
+    // 새로운 메서드 1: 특정 기숙사의 모든 방 정보를 가져오기
+    public List<RoomDTO> getRoomsByDormitoryId(int dormitoryId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<RoomDTO> roomList = new ArrayList<>();
 
+        try {
+            conn = ds.getConnection();
+            String sql = "SELECT * FROM room WHERE dormitory_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, dormitoryId);
+            rs = pstmt.executeQuery();
 
+            while (rs.next()) {
+                RoomDTO room = new RoomDTO();
+                room.setRoomId(rs.getInt("room_id"));
+                room.setDormitoryId(rs.getInt("dormitory_id"));
+                room.setRoomNumber(rs.getInt("room_number"));
+                room.setRoomType(rs.getString("room_type"));
+                room.setCapacity(rs.getInt("capacity"));
+                room.setFee(rs.getInt("fee"));
+                roomList.add(room);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources(conn, pstmt, rs);
+        }
+        return roomList;
+    }
 
+    // 새로운 메서드 2: 모든 방 정보를 가져오기
+    public List<RoomDTO> getAllRooms() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<RoomDTO> roomList = new ArrayList<>();
+
+        try {
+            conn = ds.getConnection();
+            String sql = "SELECT * FROM room";
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                RoomDTO room = new RoomDTO();
+                room.setRoomId(rs.getInt("room_id"));
+                room.setDormitoryId(rs.getInt("dormitory_id"));
+                room.setRoomNumber(rs.getInt("room_number"));
+                room.setRoomType(rs.getString("room_type"));
+                room.setCapacity(rs.getInt("capacity"));
+                room.setFee(rs.getInt("fee"));
+                roomList.add(room);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources(conn, pstmt, rs);
+        }
+        return roomList;
+    }
 
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {

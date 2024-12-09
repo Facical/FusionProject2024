@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.Map;
 
 import static java.lang.Integer.parseInt;
 
@@ -78,6 +79,10 @@ public class Threads extends Thread {
         this.admissionService = new AdmissionService();
         this.studentPaymentDAO = new StudentPaymentDAO();
         this.studentPaymentDTO = new StudentPaymentDTO();
+        this.applicantInfoDAO = new ApplicantInfoDAO();
+        this.applicantInfoDTO = new ApplicantInfoDTO();
+
+
     }
 
     public void run() {
@@ -124,6 +129,101 @@ public class Threads extends Thread {
                                 out.write(packet);
                                 out.flush();
                                 break;
+
+                                // 입사자 선발 및 호실 배정
+                            case Packet.SELECT_STUDENTS:
+                                System.out.println("기숙사 배정 요청 처리 시작");
+
+                                try {
+                                    // 1. 신청자 정보 가져오기
+                                    System.out.println("신청자 정보를 가져오는 중...");
+                                    ApplicantService applicantService = new ApplicantService();
+                                    List<ApplicantDTO> applicants = applicantService.getApplicantsWithScores();
+
+                                    if (applicants == null || applicants.isEmpty()) {
+                                        throw new IllegalStateException("신청자 정보가 없습니다.");
+                                    }
+
+                                    System.out.println("신청자 목록: " + applicants.toString());
+
+                                    // 2. 기숙사 배정 수행
+                                    System.out.println("기숙사 배정을 수행하는 중...");
+                                    WinnerAssignmentService winnerAssignmentService = new WinnerAssignmentService();
+                                    List<Map<String, List<ApplicantDTO>>> assignmentResult = winnerAssignmentService.assignApplicantsToDormitories(applicants);
+
+                                    if (assignmentResult == null || assignmentResult.isEmpty()) {
+                                        throw new IllegalStateException("배정 결과가 없습니다.");
+                                    }
+
+                                    System.out.println("배정 결과: " + assignmentResult.toString());
+
+                                    // 3. 배정 결과를 DB에 저장
+                                    System.out.println("배정 결과를 DB에 저장하는 중...");
+                                    Map<String, List<ApplicantDTO>> maleDormitories = assignmentResult.get(0);
+                                    Map<String, List<ApplicantDTO>> femaleDormitories = assignmentResult.get(1);
+
+                                    winnerAssignmentService.saveDormitoryAssignments(maleDormitories);
+                                    winnerAssignmentService.saveDormitoryAssignments(femaleDormitories);
+
+                                    System.out.println("배정 결과 저장 완료!");
+
+                                    // 4. 성공 응답 생성
+                                    System.out.println("성공 응답을 생성하는 중...");
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.SELECT_STUDENTS, Packet.SUCCESS, "배정 완료");
+                                    packet = Packet.makePacket(txMsg);
+                                    out.write(packet);
+                                    out.flush();
+                                } catch (IllegalStateException e) {
+                                    // 데이터 누락 등 논리적 문제 처리
+                                    e.printStackTrace();
+                                    System.err.println("논리적 오류 발생: " + e.getMessage());
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.SELECT_STUDENTS, Packet.FAIL, "배정 실패: " + e.getMessage());
+                                    packet = Packet.makePacket(txMsg);
+                                    try {
+                                        out.write(packet);
+                                        out.flush();
+                                    } catch (Exception ex) {
+                                        ex.printStackTrace();
+                                        System.err.println("실패 응답 전송 중 오류 발생: " + ex.getMessage());
+                                    }
+                                } catch (Exception e) {
+                                    // 시스템 오류 처리
+                                    e.printStackTrace();
+                                    System.err.println("배정 중 시스템 오류 발생: " + e.getMessage());
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.SELECT_STUDENTS, Packet.FAIL, "배정 중 시스템 오류 발생");
+                                    packet = Packet.makePacket(txMsg);
+                                    try {
+                                        out.write(packet);
+                                        out.flush();
+                                    } catch (Exception ex) {
+                                        ex.printStackTrace();
+                                        System.err.println("실패 응답 전송 중 오류 발생: " + ex.getMessage());
+                                    }
+                                }
+                                break;
+
+
+// 합격자 조회 결과
+                            case Packet.RESULT:
+                                // 서비스 호출
+                                StudentPassCheckService studentPassCheckService = new StudentPassCheckService();
+                                StudentPassDTO studentPassDTO = studentPassCheckService.getStudentPassInfo(studentID);
+
+                                // 결과 포맷
+                                String result;
+                                if (studentPassDTO == null) {
+                                    // result = "합격 정보가 없습니다.";
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.RESULT, Packet.FAIL, null);
+                                } else {
+                                    result = studentPassCheckService.formatStudentPassInfo(studentPassDTO);
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.RESULT, Packet.SUCCESS, result);
+                                }
+
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+                                break;
+
 
                             case Packet.CHECK_PAY_DORMITORY:
                                 ApplicationDTO applicationDTO = applicationDAO.getApplicationInfo(studentID);

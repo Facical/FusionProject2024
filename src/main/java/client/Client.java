@@ -171,6 +171,7 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
+                    // 서버에서 DB 조회결과
                     rxMsg = new Message();
                     header = new byte[Packet.LEN_HEADER];
                     in.read(header);
@@ -180,19 +181,15 @@ public class Client {
                     Message.makeMessageBody(rxMsg, body);
 
                     String data = rxMsg.getData();
-                    String[] parts = data.split(",");
+                    if (rxMsg.getData() == null)
+                        System.out.println("불합격");
 
-                    String roomId = parts[0];
-                    String status = parts[1];
-
-                    if (rxMsg.getType() == Packet.RESULT){
-                        System.out.println("합격 여부 : " + status);
-                        System.out.println("호실 확인 : " + roomId);
-                    }else{
-                        System.out.println("합격 여부 및 호실 확인 실패");
+                    else
+                    {
+                        System.out.println(data);
                     }
-                    return;
 
+                    break;
 
                 case 4: //생활관 비용 확인 및 납부
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_PAY_DORMITORY, Packet.NOT_USED, "")));
@@ -206,7 +203,7 @@ public class Client {
                     if (type == Packet.RESPONSE && detail == Packet.SUCCESS) {
                         data = rxMsg.getData();
                         if (data != null && !data.isEmpty()) {
-                            parts = data.split(",");
+                            String[] parts = data.split(",");
                             String roomFee = parts[0];
                             String mealFee = parts[1];
                             String totalFee = parts[2];
@@ -391,7 +388,7 @@ public class Client {
                     }
                     break;
 
-                case 3: // 2.3 기능
+                case 3: // 2.3 입사 신청자 조회 기능
                     System.out.println("=== 입사 신청자 조회 ===");
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.VIEW_APPLICANTS,
@@ -409,9 +406,27 @@ public class Client {
                     in.read(body);
                     Message.makeMessageBody(rxMsg, body);
 
-                case 4: // 2.4 기능
+                case 4: // 2.4 입사자 선발 및 호실 배정 기능
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.SELECT_STUDENTS,
+                            Packet.NOT_USED,
+                            "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
 
-                case 5: // 2.5 기능
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    System.out.println(rxMsg.getData());
+
+                    break;
+                case 5: // 2.5 비용 납부자 조회 기능
                     System.out.println("=== 생활관 비용 납부자 조회 ===");
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.VIEW_PAID_STUDENTS,

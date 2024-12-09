@@ -2,6 +2,7 @@ package client;
 
 import network.Message;
 import common.Packet;
+import service.StudentService;
 import view.StudentViewer;
 import view.AdminViewer;
 
@@ -132,16 +133,56 @@ public class Client {
                         }
                     }
                     break;
+
                 case 2: // 1.2 기능
-                    System.out.println("=== 입사 신청 ===");
-                    System.out.println("1지망 생활관 입력");
-                    String firstDormitory = br.readLine();
-                    System.out.println("1지망 생활관의 식사 입력 (5일식, 7일식) : ");
-                    String firstDormitoryMeal = br.readLine();
-                    System.out.println("2지망 생활관 입력");
-                    String secondDormitory = br.readLine();
-                    System.out.println("2지망 생활관의 식사 입력 (5일식, 7일식) : ");
-                    String secondDormitoryMeal = br.readLine();
+                    System.out.println("============= 입사 신청 =============");
+                    System.out.println("오름관 1동, 푸름관 3동 : 여자만 신청 가능");
+                    System.out.println();
+                    StudentService studentService = new StudentService();
+                    String gender = studentService.getGender(loggedInUserId);
+                    String firstDormitory = "";
+                    String firstDormitoryMeal = "";
+                    String secondDormitory = "";
+                    String secondDormitoryMeal = "";
+                    while (true) {
+                        System.out.print("1지망 생활관 입력 : ");
+                        firstDormitory = br.readLine();
+                        if (gender.equals("M") && (firstDormitory.equals("오름관1동") || firstDormitory.equals("푸름관3동"))) {
+                            System.out.println(firstDormitory + "은 여자만 신청 가능합니다!");
+                        } else if (gender.equals("F") && !(firstDormitory.equals("오름관1동") || firstDormitory.equals("푸름관3동"))) {
+                            System.out.println(firstDormitory + "은 남자만 신청 가능합니다!");
+                        } else {
+                            break;
+                        }
+                    }
+                    // 1지망 생활관 식사 입력
+                    if (firstDormitory.equals("오름관2동") || firstDormitory.equals("오름관3동")) {
+                        System.out.print(firstDormitory + "의 식사 입력 (5일식, 7일식) : ");
+                    } else {
+                        System.out.print(firstDormitory + "의 식사 입력 (5일식, 7일식, 선택안함) : ");
+                    }
+                    firstDormitoryMeal = br.readLine();
+
+                    // 2지망 생활관 입력 로직
+                    while (true) {
+                        System.out.print("2지망 생활관 입력 : ");
+                        secondDormitory = br.readLine();
+
+                        if (gender.equals("M") && (secondDormitory.equals("오름관1동") || secondDormitory.equals("푸름관3동"))) {
+                            System.out.println(secondDormitory + "은 여자만 신청 가능합니다!");
+                        } else if (gender.equals("F") && !(secondDormitory.equals("오름관1동") || secondDormitory.equals("푸름관3동"))) {
+                            System.out.println(secondDormitory + "은 남자만 신청 가능합니다!");
+                        } else {
+                            break; // 올바른 입력인 경우 루프 탈출
+                        }
+                    }
+                    // 2지망 생활관 식사 입력
+                    if (secondDormitory.equals("오름관2동") || secondDormitory.equals("오름관3동")) {
+                        System.out.print(secondDormitory + "의 식사 입력 (5일식, 7일식) : ");
+                    } else {
+                        System.out.print(secondDormitory + "의 식사 입력 (5일식, 7일식, 선택안함) : ");
+                    }
+                    secondDormitoryMeal = br.readLine();
 
                     String newData = firstDormitory + "," + firstDormitoryMeal + "," + secondDormitory + "," + secondDormitoryMeal;
                     txMsg = Message.makeMessage(Packet.REQUEST, Packet.APPLY_ADMISSION,
@@ -158,11 +199,14 @@ public class Client {
                     in.read(body);
                     Message.makeMessageBody(rxMsg, body);
 
-                    if (rxMsg.getType() == Packet.RESULT){
-                        System.out.println("입사 신청 성공!");
-                    }else{
-                        System.out.println("입사 신청 실패");
+                    if (rxMsg.getType() == Packet.RESULT) {
+                        if (rxMsg.getDetail() == Packet.SUCCESS) {
+                            System.out.println("입사 신청 성공!");
+                        } else {
+                            System.out.println("입사 신청 실패");
+                        }
                     }
+
                     break;
                 /*case 3: // 1.3 기능
                     //합격 여부 및 호실 확인
@@ -397,19 +441,27 @@ public class Client {
                     break;
                 case 2: // 2.2 기능
                     System.out.println("=== 생활관 사용료 및 급식비 등록 ===");
-                    System.out.println("생활관 입력 :");
+                    System.out.print("생활관 입력 : ");
                     String dormitoryName = br.readLine();
-                    System.out.println("생활관 사용료 입력 :");
+                    System.out.print("생활관 사용료 입력 : ");
                     String dormitoryUsageFee = br.readLine();
-                    System.out.println("생활관 급식비 등록 :");
-                    String dormitoryMealFee = br.readLine();
-                    String newData = dormitoryName + "," + dormitoryUsageFee + "," + dormitoryMealFee;
+                    System.out.println("생활관 급식비 등록");
+                    System.out.print(dormitoryName + "의 5일식 급식비를 입력하세요 : ");
+                    String fiveMealFee = br.readLine();
+                    System.out.print(dormitoryName + "의 7일식 급식비를 입력하세요 : ");
+                    String sevenMealFee = br.readLine();
+                    String newData = dormitoryName + "," + dormitoryUsageFee + "," + fiveMealFee + "," + sevenMealFee;
+                    // 오름관2동이나 3동이면 "선택안함" 항목의 급식비 0을 포함
+                    if (dormitoryName.equals("오름관2동") || dormitoryName.equals("오름관3동")) {
+                        newData += ",0"; // "선택안함" 급식비 0 추가
+                    }
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.REGISTER_FEE,
                             Packet.NOT_USED, newData);
                     packet = Packet.makePacket(txMsg);
                     out.write(packet);
                     out.flush();
+
 
                     rxMsg = new Message();
                     header = new byte[Packet.LEN_HEADER];
@@ -447,7 +499,26 @@ public class Client {
                     System.out.println(rxMsg.getData());
 
                     break;
-                case 4: // 2.4 기능
+
+                case 4: // 2.4 입사자 선발 및 호실 배정 기능
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.SELECT_STUDENTS,
+                            Packet.NOT_USED,
+                            "");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    System.out.println(rxMsg.getData());
+
                     break;
 
                 case 5: // 2.5 기능
@@ -557,39 +628,51 @@ public class Client {
 
                 case 8: // 퇴사 신청자 조회 및 환불
                     System.out.println("=== 퇴사 신청자 조회 및 환불 ===");
+
+                    // 승인된 퇴사 신청자 목록 조회
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.PROCESS_WITHDRAWAL,
                             Packet.NOT_USED,
-                            "퇴사 신청자 조회 요청");
+                            "approved_withdrawals");
                     packet = Packet.makePacket(txMsg);
                     out.write(packet);
                     out.flush();
 
-                    // 서버로부터 응답 수신
-                    rxMsg = new Message();
-                    header = new byte[Packet.LEN_HEADER];
-                    in.read(header);
-                    Message.makeMessageHeader(rxMsg, header);
-                    body = new byte[rxMsg.getLength()];
-                    in.read(body);
-                    Message.makeMessageBody(rxMsg, body);
+                    rxMsg = Message.readMessage(in);
 
-                    // 응답 처리
-                    if (rxMsg.getType() == Packet.RESULT) {
-                        if (rxMsg.getDetail() == Packet.SUCCESS) {
-                            String[] withdraws = rxMsg.getData().split(";");
-                            for (String withdraw : withdraws) {
-                                String[] parts = withdraw.split(",");
-                                System.out.println("학생 ID: " + parts[0]);
-                                System.out.println("퇴사일: " + parts[1]);
-                                System.out.println("은행명: " + parts[2]);
-                                System.out.println("계좌번호: " + parts[3]);
-                                System.out.println("환불금액: " + parts[4]);
-                                System.out.println("---------------");
-                            }
-                        } else {
-                            System.out.println(rxMsg.getData());
+                    if (rxMsg.getDetail() == Packet.SUCCESS) {
+                        String[] withdraws = rxMsg.getData().split(";");
+                        for (String withdraw : withdraws) {
+                            String[] parts = withdraw.split(",");
+                            System.out.println("학생 ID: " + parts[0]);
+                            System.out.println("퇴사일: " + parts[1]);
+                            System.out.println("은행명: " + parts[2]);
+                            System.out.println("계좌번호: " + parts[3]);
+                            System.out.println("환불금액: " + parts[4]);
+                            System.out.println("---------------");
                         }
+
+                        System.out.print("환불 처리를 진행하시겠습니까? (Y/N): ");
+                        String answer = br.readLine().trim().toUpperCase();
+
+                        if (answer.equals("Y")) {
+                            txMsg = Message.makeMessage(Packet.REQUEST,
+                                    Packet.PROCESS_WITHDRAWAL,
+                                    Packet.SUCCESS,
+                                    "process_refunds");
+                            packet = Packet.makePacket(txMsg);
+                            out.write(packet);
+                            out.flush();
+
+                            rxMsg = Message.readMessage(in);
+                            if (rxMsg.getDetail() == Packet.SUCCESS) {
+                                System.out.println("환불 처리가 완료되었습니다.");
+                            } else {
+                                System.out.println("환불 처리 중 오류가 발생했습니다.");
+                            }
+                        }
+                    } else {
+                        System.out.println("승인된 퇴사 신청자가 없습니다.");
                     }
                     break;
 

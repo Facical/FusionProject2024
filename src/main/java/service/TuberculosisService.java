@@ -2,13 +2,19 @@ package service;
 
 import dao.TuberculosisDAO;
 import dto.TuberculosisDTO;
+import dto.AdmissionDTO;
+import dao.*;
 
+import java.sql.Connection;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.util.List;
 
 public class TuberculosisService {
     private final TuberculosisDAO tuberculosisDAO = new TuberculosisDAO();
+    private final AdmissionDAO admissionDAO = new AdmissionDAO();
     private final int MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB 제한
+
 
     public String submitCertificate(TuberculosisDTO certificate) {
         // 파일 크기 검증
@@ -24,9 +30,45 @@ public class TuberculosisService {
 
         certificate.setSubmissionDate(new Date(System.currentTimeMillis()));
 
-        boolean result = tuberculosisDAO.submitCertificate(certificate);
-        return result ? "성공" : "실패";
+        // 트랜잭션으로 처리
+        Connection conn = null;
+        try {
+            conn = tuberculosisDAO.getConnection();
+            conn.setAutoCommit(false);
+
+            // 결핵진단서 정보 저장
+            boolean certificateResult = tuberculosisDAO.submitCertificate(certificate);
+
+            // 입사 상태 업데이트
+            boolean admissionResult = admissionDAO.updateCertificateStatus(certificate.getStudentId());
+
+            if (certificateResult && admissionResult) {
+                conn.commit();
+                return "성공";
+            } else {
+                conn.rollback();
+                return "실패";
+            }
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            e.printStackTrace();
+            return "실패";
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
+
 
     public List<TuberculosisDTO> getCertificates() {
         return tuberculosisDAO.getCertificates();

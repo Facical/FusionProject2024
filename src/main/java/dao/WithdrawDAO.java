@@ -13,6 +13,37 @@ public class WithdrawDAO {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
+    public List<WithdrawDTO> getApprovedWithdraws() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<WithdrawDTO> withdraws = new ArrayList<>();
+
+        try {
+            conn = ds.getConnection();
+            String sql = "SELECT * FROM withdrawal_application WHERE withdrawal_status = '승인' ORDER BY withdrawal_date";
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                WithdrawDTO withdraw = new WithdrawDTO();
+                withdraw.setWithdrawalId(rs.getInt("withdrawal_id"));
+                withdraw.setStudentId(rs.getInt("student_id"));
+                withdraw.setWithdrawalDate(rs.getString("withdrawal_date"));
+                withdraw.setBankName(rs.getString("bank_name"));
+                withdraw.setAccountNumber(rs.getInt("account_number"));
+                withdraw.setRefundAmount(rs.getInt("refund_amount"));
+                withdraw.setWithdrawalStatus(rs.getString("withdrawal_status"));
+                withdraws.add(withdraw);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources(conn, pstmt, rs);
+        }
+        return withdraws;
+    }
+
     public List<WithdrawDTO> getAllWithdraws() {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -21,15 +52,15 @@ public class WithdrawDAO {
 
         try {
             conn = ds.getConnection();
-            String sql = "SELECT * FROM withdrawal_application ORDER BY withdraw_date";
+            String sql = "SELECT * FROM withdrawal_application ORDER BY withdrawal_date";
             pstmt = conn.prepareStatement(sql);
             rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 WithdrawDTO withdraw = new WithdrawDTO();
-                withdraw.setWithdrawalId(rs.getInt("withdraw_id"));
+                withdraw.setWithdrawalId(rs.getInt("withdrawal_id"));
                 withdraw.setStudentId(rs.getInt("student_id"));
-                withdraw.setWithdrawalDate(rs.getString("withdraw_date"));
+                withdraw.setWithdrawalDate(rs.getString("withdrawal_date"));
                 withdraw.setBankName(rs.getString("bank_name"));
                 withdraw.setAccountNumber(rs.getInt("account_number"));
                 withdraws.add(withdraw);
@@ -92,22 +123,22 @@ public class WithdrawDAO {
         try {
             conn = ds.getConnection();
             String sql = "INSERT INTO withdrawal_application " +
-                    "(student_id, application_date, withdrawal_type, bank_name, " +
+                    "(student_id, application_date, withdrawal_date, withdrawal_type, bank_name, " +
                     "account_number, refund_amount, withdrawal_status, reason, dormitory_id)" +
-                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             pstmt = conn.prepareStatement(sql);
             //pstmt.setInt(1, withdrawDTO.getWithdrawalId());
             pstmt.setInt(1, withdrawDTO.getStudentId());
             pstmt.setString(2, withdrawDTO.getApplicationDate());
-            //pstmt.setString(4, withdrawDTO.getWithdrawalDate());
-            pstmt.setString(3, withdrawDTO.getWithdrawalType());
-            pstmt.setString(4, withdrawDTO.getBankName());
-            pstmt.setInt(5, withdrawDTO.getAccountNumber());
-            pstmt.setInt(6, withdrawDTO.getRefundAmount());
-            pstmt.setString(7, withdrawDTO.getWithdrawalStatus());
-            pstmt.setString(8, withdrawDTO.getReason());
-            pstmt.setInt(9, withdrawDTO.getDormitoryId());
+            pstmt.setString(3, withdrawDTO.getWithdrawalDate());
+            pstmt.setString(4, withdrawDTO.getWithdrawalType());
+            pstmt.setString(5, withdrawDTO.getBankName());
+            pstmt.setInt(6, withdrawDTO.getAccountNumber());
+            pstmt.setInt(7, withdrawDTO.getRefundAmount());
+            pstmt.setString(8, withdrawDTO.getWithdrawalStatus());
+            pstmt.setString(9, withdrawDTO.getReason());
+            pstmt.setInt(10, withdrawDTO.getDormitoryId());
 
             updateResult = pstmt.executeUpdate();
 

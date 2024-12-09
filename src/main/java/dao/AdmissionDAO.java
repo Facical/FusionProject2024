@@ -8,6 +8,34 @@ import java.sql.*;
 public class AdmissionDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
+    public void saveAdmission(AdmissionDTO admission) {
+        String sql = "INSERT INTO admission " +
+                "(application_id, dormitory_id, room_id, bed_number, admission_date, residence_start_date, residence_end_date, " +
+                " admission_status, certificate_status, payment_status, student_id) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = ds.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, admission.getApplicationId());
+            pstmt.setInt(2, admission.getDormitoryId());
+            pstmt.setInt(3, admission.getRoomId());
+            pstmt.setInt(4, admission.getBedNumber());
+            pstmt.setDate(5, java.sql.Date.valueOf(admission.getAdmissionDate()));
+            pstmt.setDate(6, java.sql.Date.valueOf(admission.getResidenceStartDate()));
+            pstmt.setDate(7, java.sql.Date.valueOf(admission.getResidenceEndDate()));
+            pstmt.setString(8, admission.getAdmissionStatus());
+            pstmt.setString(9, admission.getCertificateStatus());
+            pstmt.setString(10, admission.getPaymentStatus());
+            pstmt.setInt(11, admission.getStudentId());
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+
     public AdmissionDTO findAdmission(int id) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -60,6 +88,68 @@ public class AdmissionDAO {
         }
         return admission;
     }
+
+    public void UpdatePaymentStatus(AdmissionDTO admissionDTO){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        int updateResult;
+
+        try {
+            conn = ds.getConnection();
+            String sql = "UPDATE admission SET payment_status = ? WHERE admission_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, admissionDTO.getPaymentStatus());
+            pstmt.setInt(2, admissionDTO.getAdmissionId());
+            updateResult = pstmt.executeUpdate();
+
+            if (updateResult > 0) {
+                System.out.println("Update successfully");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources(conn, pstmt);
+        }
+    }
+
+    public boolean updateCertificateStatus(int studentId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = ds.getConnection();
+            String sql = "UPDATE admission SET certificate_status = '완료' WHERE student_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, studentId);
+
+            int result = pstmt.executeUpdate();
+            return result > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            closeResources(conn, pstmt, null);
+        }
+    }
+    private void closeResources(Connection conn, PreparedStatement pstmt) {
+        try {
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
+        try {
+            if (rs != null)  rs.close();
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
 
 /*    // student id를 기준으로 student table student_id = admission table student_id ->
     public boolean findCheckAdmission(int id) {
@@ -128,46 +218,10 @@ public class AdmissionDAO {
     // Insert, Update, Delete 메서드를 추가할 수 있음.
     // 예: insertAdmission(), updateAdmission(), deleteAdmission() 등.
 
-    public void UpdatePaymentStatus(AdmissionDTO admissionDTO){
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        int updateResult;
 
-        try {
-            conn = ds.getConnection();
-            String sql = "UPDATE admission SET payment_status = ? WHERE admission_id = ?";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, admissionDTO.getPaymentStatus());
-            pstmt.setInt(2, admissionDTO.getAdmissionId());
-            updateResult = pstmt.executeUpdate();
 
-            if (updateResult > 0) {
-                System.out.println("Update successfully");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            closeResources(conn, pstmt);
-        }
-    }
 
-    private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
-        try {
-            if (rs != null)  rs.close();
-            if (pstmt != null) pstmt.close();
-            if (conn != null) conn.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
-    private void closeResources(Connection conn, PreparedStatement pstmt) {
-        try {
-            if (pstmt != null) pstmt.close();
-            if (conn != null) conn.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
-}
+
+

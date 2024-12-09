@@ -9,6 +9,11 @@ import java.util.List;
 public class TuberculosisDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
+    public Connection getConnection() throws SQLException {
+        return ds.getConnection();
+    }
+
+
     public boolean submitCertificate(TuberculosisDTO certificate) {
         Connection conn = null;
         PreparedStatement pstmt = null;

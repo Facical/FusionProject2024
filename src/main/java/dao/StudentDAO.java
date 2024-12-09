@@ -45,6 +45,30 @@ public class StudentDAO {
         }
         return students;
     }
+    public String getGender(int studentId){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String gender = null;
+
+        try {
+            conn = ds.getConnection();
+            String sql = "SELECT gender FROM student WHERE student_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            // 파라미터 설정
+            pstmt.setInt(1, studentId);
+            // 쿼리 실행
+            rs = pstmt.executeQuery();
+            if(rs.next()){
+                gender = rs.getString("gender");
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
+        }finally {
+            closeResources(conn, pstmt, rs);
+        }
+        return gender;
+    }
 
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {

@@ -8,7 +8,7 @@ import java.sql.Date;
 @Setter
 public class RefundDTO {
     private int refundId;
-    private int withdrawId;
+    private int withdrawalId;
     private int amount;
     private Date refundDate;
     private int isProcessed;

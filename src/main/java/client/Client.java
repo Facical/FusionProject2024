@@ -164,7 +164,7 @@ public class Client {
                         System.out.println("입사 신청 실패");
                     }
                     break;
-                case 3: // 1.3 기능
+                /*case 3: // 1.3 기능
                     //합격 여부 및 호실 확인
                     txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_ADMISSION,
                             Packet.NOT_USED, "합격 여부 및 호실 확인 조회 요청");
@@ -181,6 +181,9 @@ public class Client {
                     Message.makeMessageBody(rxMsg, body);
 
                     String data = rxMsg.getData();
+
+                    System.out.println(rxMsg.getData() + " test ");
+
                     String[] parts = data.split(",");
 
                     String roomId = parts[0];
@@ -192,7 +195,34 @@ public class Client {
                     }else{
                         System.out.println("합격 여부 및 호실 확인 실패");
                     }
-                    return;
+                    return;*/
+                case 3: // 1.3 기능
+                    //합격 여부 및 호실 확인
+                    txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_ADMISSION,
+                            Packet.NOT_USED, "합격 여부 및 호실 확인 조회 요청");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    // 서버에서 DB 조회결과
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    String data = rxMsg.getData();
+                    if (rxMsg.getData() == null)
+                        System.out.println("불합격");
+
+                    else
+                    {
+                        System.out.println(data);
+                    }
+
+                    break;
 
 
                 case 4: //생활관 비용 확인 및 납부
@@ -207,7 +237,7 @@ public class Client {
                     if (type == Packet.RESPONSE && detail == Packet.SUCCESS) {
                         data = rxMsg.getData();
                         if (data != null && !data.isEmpty()) {
-                            parts = data.split(",");
+                            String[] parts = data.split(",");
                             String roomFee = parts[0];
                             String mealFee = parts[1];
                             String totalFee = parts[2];
@@ -517,6 +547,44 @@ public class Client {
                             }
                         } else {
                             System.out.println("조회 실패: " + rxMsg.getData());
+                        }
+                    }
+                    break;
+
+                case 8: // 퇴사 신청자 조회 및 환불
+                    System.out.println("=== 퇴사 신청자 조회 및 환불 ===");
+                    txMsg = Message.makeMessage(Packet.REQUEST,
+                            Packet.PROCESS_WITHDRAWAL,
+                            Packet.NOT_USED,
+                            "퇴사 신청자 조회 요청");
+                    packet = Packet.makePacket(txMsg);
+                    out.write(packet);
+                    out.flush();
+
+                    // 서버로부터 응답 수신
+                    rxMsg = new Message();
+                    header = new byte[Packet.LEN_HEADER];
+                    in.read(header);
+                    Message.makeMessageHeader(rxMsg, header);
+                    body = new byte[rxMsg.getLength()];
+                    in.read(body);
+                    Message.makeMessageBody(rxMsg, body);
+
+                    // 응답 처리
+                    if (rxMsg.getType() == Packet.RESULT) {
+                        if (rxMsg.getDetail() == Packet.SUCCESS) {
+                            String[] withdraws = rxMsg.getData().split(";");
+                            for (String withdraw : withdraws) {
+                                String[] parts = withdraw.split(",");
+                                System.out.println("학생 ID: " + parts[0]);
+                                System.out.println("퇴사일: " + parts[1]);
+                                System.out.println("은행명: " + parts[2]);
+                                System.out.println("계좌번호: " + parts[3]);
+                                System.out.println("환불금액: " + parts[4]);
+                                System.out.println("---------------");
+                            }
+                        } else {
+                            System.out.println(rxMsg.getData());
                         }
                     }
                     break;

@@ -21,12 +21,16 @@ public class AdmissionDAO {
             pstmt.setInt(1, id);
             rs = pstmt.executeQuery();
 
+            // 합격 시에는 방정보도 찍어줘야 하는데...
+            // 질의를 한 번 더 해서 admission table의 room id = room table의 room id 에서 room dto에 넣어주고
+            // return 할 때 admissionDTO가 아니고 admissionAndRoomDTO 필요한 정보들 다 박아주고 얘를 return
+            // 받은 거를 메시지화 해주고, 패킷화 해주고, 전송
             if (rs.next()) {
                 admission = new AdmissionDTO();
                 admission.setAdmissionId(rs.getInt("admission_id"));
                 admission.setApplicationId(rs.getInt("application_id"));
                 admission.setRoomId(rs.getInt("room_id"));
-                //admission.setBedNumber(rs.getInt("bed_number"));
+                admission.setBedNumber(rs.getInt("bed_number"));
                 admission.setDormitoryId(rs.getInt("dormitory_id"));
 
                 // 날짜 타입은 ResultSet에서 java.sql.Date로 받아온 뒤 LocalDate로 변환
@@ -56,6 +60,70 @@ public class AdmissionDAO {
         }
         return admission;
     }
+
+/*    // student id를 기준으로 student table student_id = admission table student_id ->
+    public boolean findCheckAdmission(int id) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        AdmissionDTO admissionDTO = null;
+
+        try {
+            conn = ds.getConnection();
+            String sql = "SELECT * FROM admission WHERE application_id = ? AND room_id = ? AND admission_status = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, admissionDTO.getApplicationId());
+            pstmt.setInt(2, admissionDTO.getRoomId());
+            pstmt.setString(3, admissionDTO.getAdmissionStatus());
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                admissionDTO = new AdmissionDTO();
+                admissionDTO.setApplicationId(rs.getInt("application_id"));
+                admissionDTO.setRoomId(rs.getInt("room_id"));
+                admissionDTO.setAdmissionStatus(rs.getString("admission_status"));
+            }
+            int result = pstmt.executeUpdate();
+            return result > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            closeResources(conn, pstmt, rs);
+        }
+
+    }
+
+    public AdmissionDTO findCheckAdmission() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        AdmissionDTO admissionDTO = null;
+
+        try {
+            conn = ds.getConnection();
+            String sql = "SELECT * FROM admission WHERE application_id = ? AND room_id = ? AND admission_status = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, admissionDTO.getApplicationId());
+            pstmt.setInt(2, admissionDTO.getRoomId());
+            pstmt.setString(3, admissionDTO.getAdmissionStatus());
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                admissionDTO.setApplicationId(rs.getInt("application_id"));
+                admissionDTO.setRoomId(rs.getInt("room_id"));
+                admissionDTO.setAdmissionStatus(rs.getString("admission_status"));
+            }
+            int result = pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+
+        } finally {
+            closeResources(conn, pstmt, rs);
+        }
+
+    }*/
 
     // Insert, Update, Delete 메서드를 추가할 수 있음.
     // 예: insertAdmission(), updateAdmission(), deleteAdmission() 등.

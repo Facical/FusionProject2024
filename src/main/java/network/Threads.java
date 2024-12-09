@@ -128,6 +128,26 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
+                            case Packet.CHECK_ADMISSION:
+                                // 서비스 호출
+                                StudentPassCheckService studentPassCheckService = new StudentPassCheckService();
+                                StudentPassDTO studentPassDTO = studentPassCheckService.getStudentPassInfo(studentID);
+
+                                // 결과 포맷
+                                String result;
+                                if (studentPassDTO == null) {
+                                    // result = "합격 정보가 없습니다.";
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_ADMISSION, Packet.FAIL, null);
+                                } else {
+                                    result = studentPassCheckService.formatStudentPassInfo(studentPassDTO);
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_ADMISSION, Packet.SUCCESS, result);
+                                }
+
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+                                break;
+
                             case Packet.CHECK_PAY_DORMITORY:
                                 ApplicationDTO applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
@@ -455,6 +475,31 @@ public class Threads extends Thread {
                                 out.write(packet);
                                 out.flush();
                                 break;
+
+
+//                            case Packet.CHECK_ADMISSION:
+//                                System.out.println("합격 여부 및 호실 확인 요청 받음");
+//                                admissionDTO = new AdmissionDTO();
+//
+//                                //boolean admissionSuccess = admissionService.findCheckAdmission();
+//                                String newData = admissionDTO.getRoomId() + "," + admissionDTO.getAdmissionStatus();
+//                                if(admissionSuccess){
+//                                    txMsg = Message.makeMessage(Packet.RESULT,
+//                                            Packet.CHECK_ADMISSION,
+//                                            Packet.SUCCESS,
+//                                            newData);
+//                                    System.out.println("check admission successfully: ");
+//                                }else{
+//                                    txMsg = Message.makeMessage(Packet.RESULT,
+//                                            Packet.CHECK_ADMISSION,
+//                                            Packet.FAIL,
+//                                            "합격 여부 및 호실 확인 실패");
+//                                    System.out.println("check admission failed");
+//                                }
+//                                packet = Packet.makePacket(txMsg);
+//                                out.write(packet);
+//                                out.flush();
+//                                break;
 
                             case Packet.REGISTER_FEE:
                                 String feeData = rxMsg.getData();

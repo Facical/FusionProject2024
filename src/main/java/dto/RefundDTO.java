@@ -11,5 +11,5 @@ public class RefundDTO {
     private int withdrawId;
     private int amount;
     private Date refundDate;
-    private boolean isProcessed;
+    private int isProcessed;
 }

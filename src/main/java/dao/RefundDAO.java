@@ -9,11 +9,11 @@ import java.util.List;
 public class RefundDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
-    public List<RefundDTO> getRefundsByWithdrawId(int withdrawId) {
+    public RefundDTO getRefundsByWithdrawId(int withdrawId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        List<RefundDTO> refunds = new ArrayList<>();
+        RefundDTO refundDTO = null;
 
         try {
             conn = ds.getConnection();
@@ -22,21 +22,20 @@ public class RefundDAO {
             pstmt.setInt(1, withdrawId);
             rs = pstmt.executeQuery();
 
-            while (rs.next()) {
-                RefundDTO refund = new RefundDTO();
-                refund.setRefundId(rs.getInt("refund_id"));
-                refund.setWithdrawId(rs.getInt("withdraw_id"));
-                refund.setAmount(rs.getInt("amount"));
-                refund.setRefundDate(rs.getDate("refund_date"));
-                refund.setProcessed(rs.getBoolean("is_processed"));
-                refunds.add(refund);
+            if (rs.next()) {
+                refundDTO = new RefundDTO();
+                refundDTO.setRefundId(rs.getInt("refund_id"));
+                refundDTO.setWithdrawId(rs.getInt("withdraw_id"));
+                refundDTO.setAmount(rs.getInt("amount"));
+                refundDTO.setRefundDate(rs.getDate("refund_date"));
+                refundDTO.setIsProcessed(rs.getInt("is_processed"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             closeResources(conn, pstmt, rs);
         }
-        return refunds;
+        return refundDTO;
     }
 
     private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {

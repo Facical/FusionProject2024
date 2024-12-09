@@ -242,7 +242,10 @@ public class Client {
                             String mealFee = parts[1];
                             String totalFee = parts[2];
                             String paymantStatus = parts[3];
-                            System.out.println(roomFee + ", " + mealFee + ", " + totalFee + ", " + paymantStatus);
+                            System.out.println("기숙사 비용: " + roomFee + "원");
+                            System.out.println("식사 비용: " + mealFee + "원");
+                            System.out.println("총 비용(기숙사 비용 + 식사 비용): " + totalFee + "원");
+                            System.out.println("납부 상태: " + paymantStatus);
                         }
 
                         System.out.println("납부하시겠습니까? (Y/N): ");
@@ -310,14 +313,15 @@ public class Client {
                     System.out.println("퇴사 신청 메뉴 입니다.");
                     System.out.println("환불 받으실 은행 이름, 계좌 번호, 퇴사 신청 사유를 입력해주세요.");
                     System.out.print("환불 받으실 은행 이름: ");
-                    //sc.nextLine();
                     String bankName = br.readLine();
                     System.out.print("계좌 번호: ");
                     String accountNumber = br.readLine();
                     System.out.print("퇴사 신청 사유: ");
                     String reason = br.readLine();
+                    System.out.print("퇴사 날짜(ex: 20240101): ");
+                    String quitDate = br.readLine();
 
-                    newData = bankName + "," + accountNumber + "," + reason;
+                    newData = bankName + "," + accountNumber + "," + reason + "," + quitDate;
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.REQUEST_WITHDRAWAL, Packet.NOT_USED, newData)));
                     out.flush();
 

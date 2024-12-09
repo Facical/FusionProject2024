@@ -268,13 +268,12 @@ public class Threads extends Thread {
                                 LocalDate now = LocalDate.now();
                                 applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 admissionDTO = admissionDAO.findAdmission(studentID);
-                                //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
-                                if (admissionDTO == null) {
+                                if(admissionDTO == null){
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));
                                     out.flush();
-                                } else {
-                                    applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId(),admissionDTO.getDormitoryId());
+                                }else {
+                                    applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId(), admissionDTO.getDormitoryId());
 
                                     WithdrawDTO withdraw = new WithdrawDTO();
                                     String data = rxMsg.getData();
@@ -283,6 +282,7 @@ public class Threads extends Thread {
                                     String bankName = parts[0];
                                     String accountNumber = parts[1];
                                     String reason = parts[2];
+                                    String quitDate = parts[3];
 
                                     withdraw.setStudentId(studentID);
                                     withdraw.setApplicationDate(now.toString());
@@ -292,12 +292,16 @@ public class Threads extends Thread {
                                     MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
                                     int totalFee = roomDTO.getFee() + mealDTO.getFee();
 
-                                    if (now.isBefore(admissionDTO.getResidenceStartDate())) {
+                                    if(now.isBefore(admissionDTO.getResidenceStartDate())){
                                         withdraw.setWithdrawalType("입사 전");
                                         //환불 금액
                                         withdraw.setRefundAmount(totalFee);
-                                    } else {
-                                        Period remainPeriod = Period.between(now, admissionDTO.getResidenceEndDate());
+                                    }
+                                    else{
+                                        DateTimeFormatter quitFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+                                        LocalDate quit = LocalDate.parse(quitDate, quitFormatter);
+
+                                        Period remainPeriod = Period.between(quit, admissionDTO.getResidenceEndDate());
                                         Period totalPeriod = Period.between(admissionDTO.getResidenceStartDate(), admissionDTO.getResidenceEndDate());
                                         withdraw.setWithdrawalType("입사 후");
 
@@ -309,10 +313,11 @@ public class Threads extends Thread {
                                     }
 
 
+                                    withdraw.setWithdrawalDate(quitDate);
                                     withdraw.setBankName(bankName);
                                     withdraw.setAccountNumber(parseInt(accountNumber));
 
-                                    withdraw.setWithdrawalStatus("취소");
+                                    withdraw.setWithdrawalStatus("승인");
                                     withdraw.setReason(reason);
                                     //생활관 아이디
                                     withdraw.setDormitoryId(applicationPreferenceDTO.getDormitory_id());
@@ -323,15 +328,27 @@ public class Threads extends Thread {
                                     out.flush();
                                 }
                                 break;
+
                             case Packet.CHECK_REFUND:
                                 WithdrawDTO withdraw;
                                 withdraw = withdrawDAO.getWithdrawInfo(studentID);
 
-                                if (withdraw == null) {
+                                RefundDTO refundDTO;
+                                RefundDAO refundDAO = new RefundDAO();
+                                refundDTO = refundDAO.getRefundsByWithdrawId(withdraw.getWithdrawalId());
+
+
+                                if(refundDTO == null){
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.FAIL, "환불 신청을 하지 않았거나 대상자가 아닙니다.")));
                                     out.flush();
-                                } else {
-                                    String newData = withdraw.getWithdrawalStatus();
+                                }else{
+                                    String newData;
+
+                                    if(refundDTO.getIsProcessed() == 1){
+                                        newData = "승인";
+                                    }else {
+                                        newData = "취소";
+                                    }
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.SUCCESS, newData)));
                                     out.flush();
                                 }

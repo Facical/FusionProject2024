@@ -39,7 +39,7 @@ public class Threads extends Thread {
     private ApplicantInfoDAO applicantInfoDAO;
     private ApplicantInfoDTO applicantInfoDTO;
 
-    private ScheduleService scheduleService;
+
     private RoomService roomService;
     private MealService mealService;
     private ApplicationService applicationService;
@@ -47,7 +47,7 @@ public class Threads extends Thread {
     private StudentService studentService;
     private AdmissionService admissionService;
     private TuberculosisService tuberculosisService;
-
+    private ScheduleService scheduleService;
     private StudentPaymentDAO studentPaymentDAO;
     private StudentPaymentDTO studentPaymentDTO;
 
@@ -264,6 +264,7 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
+
                             case Packet.REQUEST_WITHDRAWAL:
                                 LocalDate now = LocalDate.now();
                                 applicationDTO = applicationDAO.getApplicationInfo(studentID);
@@ -376,7 +377,7 @@ public class Threads extends Thread {
                                 }
                                 // 제출 처리
                                 else {
-                                    int studentId = Integer.parseInt(certParts[0]);
+                                    int studentId = parseInt(certParts[0]);
                                     byte[] fileData = Base64.getDecoder().decode(certParts[1]);
                                     String fileName = certParts[2];
                                     String fileType = certParts[3];
@@ -407,6 +408,8 @@ public class Threads extends Thread {
                                 break;
 
                             case Packet.CHECK_CERTIFICATES:
+
+
                                 List<TuberculosisDTO> certificates = tuberculosisService.getCertificates();
                                 String certListData = tuberculosisService.formatCertificateList(certificates);
 
@@ -505,37 +508,80 @@ public class Threads extends Thread {
                                 String feeData = rxMsg.getData();
                                 String[] parts = feeData.split(",");
                                 RoomDTO roomDTO = new RoomDTO();
-                                MealDTO mealDTO = new MealDTO();
-
-                                if (parts[0].equals("푸름관1동")) {
-                                    roomDTO.setDormitoryId(1);
-                                    mealDTO.setDormitoryId(1);
-                                } else if (parts[0].equals("푸름관2동")) {
-                                    roomDTO.setDormitoryId(2);
-                                    mealDTO.setDormitoryId(2);
-                                } else if (parts[0].equals("푸름관3동")) {
-                                    roomDTO.setDormitoryId(3);
-                                    mealDTO.setDormitoryId(3);
-                                } else if (parts[0].equals("푸름관4동")) {
-                                    roomDTO.setDormitoryId(4);
-                                    mealDTO.setDormitoryId(4);
-                                } else if (parts[0].equals("오름관1동")) {
-                                    roomDTO.setDormitoryId(5);
-                                    mealDTO.setDormitoryId(5);
-                                } else if (parts[0].equals("오름관2동")) {
-                                    roomDTO.setDormitoryId(6);
-                                    mealDTO.setDormitoryId(6);
-                                } else if (parts[0].equals("오름관3동")) {
-                                    roomDTO.setDormitoryId(7);
-                                    mealDTO.setDormitoryId(7);
+                                int dormitory_id = -1;
+                                int fee = Integer.parseInt(parts[1]);
+                                boolean updateSuccess = false;
+                                switch (parts[0]) {
+                                    case "푸름관1동":
+                                        dormitory_id = 1;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "푸름관2동":
+                                        dormitory_id = 2;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "푸름관3동":
+                                        dormitory_id = 3;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "푸름관4동":
+                                        dormitory_id = 4;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "오름관1동":
+                                        dormitory_id = 5;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "오름관2동":
+                                        dormitory_id = 6;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                    case "오름관3동":
+                                        dormitory_id = 7;
+                                        roomDTO.setDormitoryId(1);
+                                        break;
+                                }
+                                if (dormitory_id > -1) {
+                                    updateSuccess = roomService.updateRoomFeeByDormitoryId(dormitory_id, fee);
+                                    if (updateSuccess) {
+                                        System.out.println("Fee successfully updated for dormitory ID: " + dormitory_id);
+                                    } else {
+                                        System.out.println("Failed to update fee for dormitory ID: " + dormitory_id);
+                                    }
+                                } else {
+                                    System.out.println("Invalid dormitory name: " + parts[0]);
                                 }
 
-                                roomDTO.setFee(Integer.parseInt(parts[1]));
-                                mealDTO.setFee(Integer.parseInt(parts[2]));
-                                boolean roomSuccess = roomService.registerRoom(roomDTO);
-                                boolean mealSuccess = mealService.registerMeal(mealDTO);
+                                //Room 등록
+//                                boolean roomSuccess = roomService.registerRoom(roomDTO);
 
-                                if (roomSuccess && mealSuccess) {
+                                int dormitoryId = roomDTO.getDormitoryId();
+
+                                MealDTO mealDTO1 = new MealDTO(); // 7일식
+                                mealDTO1.setDormitoryId(dormitoryId);
+                                mealDTO1.setName("7일식");
+                                mealDTO1.setFee(Integer.parseInt(parts[3])); // sevenMealFee
+
+                                MealDTO mealDTO2 = new MealDTO(); // 5일식
+                                mealDTO2.setDormitoryId(dormitoryId);
+                                mealDTO2.setName("5일식");
+                                mealDTO2.setFee(Integer.parseInt(parts[2])); // fiveMealFee
+                                // Meal 등록
+                                boolean mealSuccess1 = mealService.registerMeal(mealDTO1);
+                                boolean mealSuccess2 = mealService.registerMeal(mealDTO2);
+
+                                // 선택안함 급식비 등록 (오름관2동이나 3동이 아닐 때만 추가)
+                                boolean mealSuccess3 = false;
+                                if (!(parts.length == 5 && Integer.parseInt(parts[4]) == 0)) {
+                                    MealDTO mealDTO3 = new MealDTO();
+                                    mealDTO3.setDormitoryId(dormitoryId);
+                                    mealDTO3.setName("선택안함");
+                                    mealDTO3.setFee(0); // 급식비 0원
+
+                                    mealSuccess3 = mealService.registerMeal(mealDTO3);
+                                }
+
+                                if (updateSuccess && mealSuccess1 && mealSuccess2) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_FEE,
                                             Packet.SUCCESS,
@@ -613,6 +659,8 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + code);
                         }
                         break;
 
@@ -624,8 +672,8 @@ public class Threads extends Thread {
                             String[] parts = data.split(",");
                             String id = parts[0];
                             String password = parts[1];
-                            loggedInUserId = Integer.parseInt(id);
-                            UserDTO user = userDAO.findUser(Integer.parseInt(id));
+                            loggedInUserId = parseInt(id);
+                            UserDTO user = userDAO.findUser(parseInt(id));
                             boolean loginSuccess = (user != null) &&
                                     String.valueOf(user.getPassword()).equals(password);
 
@@ -660,6 +708,7 @@ public class Threads extends Thread {
         }
     }
 
+
     private int mapDormitoryToId(String dormitoryName) {
         switch (dormitoryName) {
             case "푸름관1동": return 1;
@@ -674,10 +723,12 @@ public class Threads extends Thread {
     }
     private int mapMealId(String dormitoryName, String mealType) {
         int dormitoryId = mapDormitoryToId(dormitoryName);
-        switch (mealType) {
-            case "7일식": return dormitoryId * 2 - 1; // 7일식은 홀수 ID
-            case "5일식": return dormitoryId * 2;     // 5일식은 짝수 ID
-            default: throw new IllegalArgumentException("Invalid meal type: " + mealType);
+        if(mealType.equals("선택안함")){
+            int mealId = mealService.getMealId(dormitoryId, "선택안함");
+            return mealId;
+        }else{
+            int mealId = mealService.getMealId(dormitoryId, mealType);
+            return mealId;
         }
     }
 

@@ -5,7 +5,7 @@ import dto.TuberculosisDTO;
 
 import java.sql.Date;
 import java.util.List;
-
+//dㅇㅇㅇ2
 public class TuberculosisService {
     private final TuberculosisDAO tuberculosisDAO = new TuberculosisDAO();
     private final int MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB 제한

@@ -13,8 +13,6 @@ import java.sql.SQLException;
 public class ApplicationPreferenceDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
-        Connection conn = null;
-        PreparedStatement pstmt = null;
 
     public ApplicationPreferenceDTO getApplicationPreference(int application_id, int dormitory_id) {
         Connection conn = null;
@@ -36,9 +34,12 @@ public class ApplicationPreferenceDAO {
                 applicationPreferenceDTO = new ApplicationPreferenceDTO();
                 applicationPreferenceDTO.setApplication_preference_id(rs.getInt("application_preference_id"));
                 applicationPreferenceDTO.setApplication_id(rs.getInt("application_id"));
+
 //                applicationPreferenceDTO.setPreference_first(rs.getInt("preference_first"));
 //                applicationPreferenceDTO.setPreference_second(rs.getInt("preference_second"));
+
                 applicationPreferenceDTO.setDormitory_id(rs.getInt("dormitory_id"));
+                applicationPreferenceDTO.setPreference_order(rs.getInt("preference_order"));
                 applicationPreferenceDTO.setMeal_id(rs.getInt("meal_id"));
             }
         } catch (SQLException e) {

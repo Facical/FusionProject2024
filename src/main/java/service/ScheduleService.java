@@ -4,11 +4,11 @@ package service;
 import dao.ScheduleDAO;
 import dto.ScheduleDTO;
 import java.util.List;
-
+//dㅇㅇㅇ2
 public class ScheduleService {
     private final ScheduleDAO scheduleDAO = new ScheduleDAO();
 
-    // 선발 일정 조회
+    // 선발 일정 조회.
     public List<ScheduleDTO> getSchedules() {
         return scheduleDAO.getAllSchedules();
     }

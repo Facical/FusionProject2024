@@ -178,7 +178,7 @@ public class Client {
                         System.out.print(firstDormitory + "의 식사 입력 (5일식, 7일식, 선택안함) : ");
                     }
                     firstDormitoryMeal = br.readLine();
-
+                    //111
                     // 2지망 생활관 입력 로직
                     while (true) {
                         System.out.print("2지망 생활관 입력 : ");

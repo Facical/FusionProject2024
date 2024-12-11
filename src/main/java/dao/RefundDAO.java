@@ -19,7 +19,7 @@ public class RefundDAO {
 
         try {
             conn = ds.getConnection();
-            conn.setAutoCommit(false);  // 트랜잭션 시작
+            conn.setAutoCommit(false);  //  ``@a3                                                     342  트랜잭션 시작
 
             String sql = "INSERT INTO refund (withdrawal_id, amount, refund_date, is_processed) VALUES (?, ?, ?, 2)";
             pstmt = conn.prepareStatement(sql);

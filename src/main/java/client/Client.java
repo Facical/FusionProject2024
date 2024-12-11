@@ -1,7 +1,9 @@
 package client;
 
+import dto.ScheduleDTO;
 import network.Message;
 import common.Packet;
+import service.ScheduleService;
 import service.StudentService;
 import view.StudentViewer;
 import view.AdminViewer;
@@ -9,7 +11,10 @@ import view.AdminViewer;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.List;
 import java.util.Scanner;
 
 public class Client {
@@ -135,6 +140,12 @@ public class Client {
                     break;
 
                 case 2: // 1.2 기능
+                    String feature = "생활관 입사 신청";
+                    if(!isSuccess(feature)){
+                        System.out.println("생활관 입사 신청 기간이 아닙니다!");
+                        break;
+                    }
+
                     System.out.println("============= 입사 신청 =============");
                     System.out.println("오름관 1동, 푸름관 3동 : 여자만 신청 가능");
                     System.out.println();
@@ -208,40 +219,15 @@ public class Client {
                     }
 
                     break;
-                /*case 3: // 1.3 기능
-                    //합격 여부 및 호실 확인
-                    txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_ADMISSION,
-                            Packet.NOT_USED, "합격 여부 및 호실 확인 조회 요청");
-                    packet = Packet.makePacket(txMsg);
-                    out.write(packet);
-                    out.flush();
 
-                    rxMsg = new Message();
-                    header = new byte[Packet.LEN_HEADER];
-                    in.read(header);
-                    Message.makeMessageHeader(rxMsg, header);
-                    body = new byte[rxMsg.getLength()];
-                    in.read(body);
-                    Message.makeMessageBody(rxMsg, body);
-
-                    String data = rxMsg.getData();
-
-                    System.out.println(rxMsg.getData() + " test ");
-
-                    String[] parts = data.split(",");
-
-                    String roomId = parts[0];
-                    String status = parts[1];
-
-                    if (rxMsg.getType() == Packet.RESULT){
-                        System.out.println("합격 여부 : " + status);
-                        System.out.println("호실 확인 : " + roomId);
-                    }else{
-                        System.out.println("합격 여부 및 호실 확인 실패");
-                    }
-                    return;*/
                 case 3: // 1.3 기능
                     //합격 여부 및 호실 확인
+                    feature = "생활관 배정 및 합격자 발표";
+                    if(!isSuccess(feature)) {
+                        System.out.println("생활관 배정 및 합격자 발표 기간이 아닙니다!");
+                        break;
+                    }
+
                     txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_ADMISSION,
                             Packet.NOT_USED, "합격 여부 및 호실 확인 조회 요청");
                     packet = Packet.makePacket(txMsg);
@@ -269,7 +255,12 @@ public class Client {
                     break;
 
 
-                case 4: //생활관 비용 확인 및 납부
+                case 4: // 1.4 생활관 비용 확인 및 납부
+                    feature = "생활관비 납부";
+                    if(!isSuccess(feature)){
+                        System.out.println("생활관 비용 확인 및 납부 기간이 아닙니다!");
+                        break;
+                    }
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_PAY_DORMITORY, Packet.NOT_USED, "")));
                     out.flush();
 
@@ -318,6 +309,11 @@ public class Client {
                     break;
 
                 case 5:
+                    feature = "결핵진단서 제출";
+                    if(!isSuccess(feature)){
+                        System.out.println("결핵진단서 제출 기간이 아닙니다!");
+                        break;
+                    }
                     System.out.println("=== 결핵진단서 제출 ===");
                     System.out.print("제출할 파일 경로 입력: ");
                     String filePath = br.readLine();
@@ -413,6 +409,7 @@ public class Client {
             int adminMenu = AdminViewer.viewAdminPage();
             switch(adminMenu) {
                 case 1:
+
                     System.out.println("=== 선발 일정 등록 ===");
                     System.out.print("기간명 입력: ");
                     String periodName = br.readLine();
@@ -629,7 +626,6 @@ public class Client {
                 case 8: // 퇴사 신청자 조회 및 환불
                     System.out.println("=== 퇴사 신청자 조회 및 환불 ===");
 
-                    // 승인된 퇴사 신청자 목록 조회
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.PROCESS_WITHDRAWAL,
                             Packet.NOT_USED,
@@ -641,35 +637,55 @@ public class Client {
                     rxMsg = Message.readMessage(in);
 
                     if (rxMsg.getDetail() == Packet.SUCCESS) {
-                        String[] withdraws = rxMsg.getData().split(";");
-                        for (String withdraw : withdraws) {
-                            String[] parts = withdraw.split(",");
-                            System.out.println("학생 ID: " + parts[0]);
-                            System.out.println("퇴사일: " + parts[1]);
-                            System.out.println("은행명: " + parts[2]);
-                            System.out.println("계좌번호: " + parts[3]);
-                            System.out.println("환불금액: " + parts[4]);
-                            System.out.println("---------------");
-                        }
+                        String[] lines = rxMsg.getData().split("\n");
+                        String currentDorm = null;
+                        boolean hasWithdraws = false;
 
-                        System.out.print("환불 처리를 진행하시겠습니까? (Y/N): ");
-                        String answer = br.readLine().trim().toUpperCase();
-
-                        if (answer.equals("Y")) {
-                            txMsg = Message.makeMessage(Packet.REQUEST,
-                                    Packet.PROCESS_WITHDRAWAL,
-                                    Packet.SUCCESS,
-                                    "process_refunds");
-                            packet = Packet.makePacket(txMsg);
-                            out.write(packet);
-                            out.flush();
-
-                            rxMsg = Message.readMessage(in);
-                            if (rxMsg.getDetail() == Packet.SUCCESS) {
-                                System.out.println("환불 처리가 완료되었습니다.");
-                            } else {
-                                System.out.println("환불 처리 중 오류가 발생했습니다.");
+                        for (String line : lines) {
+                            String[] parts = line.split("\\|");
+                            if (parts[0].equals("DORM_START")) {
+                                currentDorm = parts[1];
+                                System.out.println("\n=== " + currentDorm + " ===");
                             }
+                            else if (parts[0].equals("STUDENT")) {
+                                hasWithdraws = true;
+                                System.out.println("학생명: " + parts[1] + " (학생ID: " + parts[2] + ")");
+                                System.out.println("퇴사일: " + parts[3]);
+                                System.out.println("은행명: " + parts[4]);
+                                System.out.println("계좌번호: " + parts[5]);
+                                System.out.println("환불금액: " + parts[6]);
+                                System.out.println("---------------");
+                            }
+                            else if (parts[0].equals("DORM_END")) {
+                                if (!hasWithdraws && currentDorm != null) {
+                                    System.out.println("해당 생활관의 퇴사 신청자가 없습니다.");
+                                    hasWithdraws = false;
+                                }
+
+                            }
+                        }
+                        if (hasWithdraws) {
+                            System.out.print("\n환불 처리를 진행하시겠습니까? (Y/N): ");
+                            String answer = br.readLine().trim().toUpperCase();
+
+                            if (answer.equals("Y")) {
+                                txMsg = Message.makeMessage(Packet.REQUEST,
+                                        Packet.PROCESS_WITHDRAWAL,
+                                        Packet.SUCCESS,
+                                        "process_refunds");
+                                packet = Packet.makePacket(txMsg);
+                                out.write(packet);
+                                out.flush();
+
+                                rxMsg = Message.readMessage(in);
+                                if (rxMsg.getDetail() == Packet.SUCCESS) {
+                                    System.out.println("환불 처리가 완료되었습니다.");
+                                } else {
+                                    System.out.println("환불 처리 중 오류가 발생했습니다.");
+                                }
+                            }
+                        } else {
+                            //System.out.println("\n퇴사 신청자가 없습니다.");
                         }
                     } else {
                         System.out.println("승인된 퇴사 신청자가 없습니다.");
@@ -686,6 +702,37 @@ public class Client {
                     return;
             }
         }
+    }
+
+    public boolean isSuccess(String feature){
+        ScheduleService scheduleService = new ScheduleService();
+        List<ScheduleDTO> s = scheduleService.getSchedules();
+        for(ScheduleDTO schedule : s){
+            if(schedule.getPeriodName().equals(feature)){
+                //String startDate, String startTime, String endDate, String endTime
+                return isWithinPeriod(schedule.getStartDate(),schedule.getStartHour(),schedule.getEndDate(),schedule.getEndHour());
+            }
+        }
+        return false;
+    }
+    public static boolean isWithinPeriod(String startDate, String startTime, String endDate, String endTime) {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // 시작 시간 및 종료 시간
+        LocalDateTime startDateTime = LocalDateTime.parse(startDate + " " + startTime, dateTimeFormatter);
+        LocalDateTime endDateTime = LocalDateTime.parse(endDate + " " + endTime, dateTimeFormatter);
+
+        // 현재 시간
+        LocalDateTime now = LocalDateTime.now();
+        System.out.println("현재 시간: " + now);
+        System.out.println("시작 시간: " + startDateTime);
+        System.out.println("종료 시간: " + endDateTime);
+
+        // 현재 시간이 기간 내에 있는지 확인
+        boolean result = (now.isEqual(startDateTime) || now.isAfter(startDateTime)) && (now.isEqual(endDateTime) || now.isBefore(endDateTime));
+        System.out.println("결과: " + result);
+
+        return result;
     }
 
     private void closeResources() {

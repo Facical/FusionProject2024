@@ -376,6 +376,8 @@ public class Threads extends Thread {
                                     //생활관 아이디
                                     withdraw.setDormitoryId(applicationPreferenceDTO.getDormitory_id());
 
+                                    admissionDTO.setAdmissionStatus("입사 취소");
+                                    admissionDAO.UpdateAdmissionStatus(admissionDTO);
                                     withdrawDAO.setWithdrawInfo(withdraw);
 
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.SUCCESS, "")));

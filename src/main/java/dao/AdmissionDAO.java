@@ -34,7 +34,28 @@ public class AdmissionDAO {
             e.printStackTrace();
         }
     }
+    public void UpdateAdmissionStatus(AdmissionDTO admissionDTO){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        int updateResult;
 
+        try {
+            conn = ds.getConnection();
+            String sql = "UPDATE admission SET admission_status = ? WHERE admission_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, admissionDTO.getAdmissionStatus());
+            pstmt.setInt(2, admissionDTO.getAdmissionId());
+            updateResult = pstmt.executeUpdate();
+
+            if (updateResult > 0) {
+                System.out.println("Update successfully");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources(conn, pstmt);
+        }
+    }
 
     public AdmissionDTO findAdmission(int id) {
         Connection conn = null;

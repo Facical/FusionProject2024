@@ -1,6 +1,8 @@
 package dao;
 
 import dto.WithdrawDTO;
+import dto.WithdrawDetailDTO;
+
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
@@ -12,6 +14,48 @@ public class WithdrawDAO {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
+
+    public List<WithdrawDetailDTO> getApprovedWithdrawsByDormitory() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<WithdrawDetailDTO> withdraws = new ArrayList<>();
+
+        try {
+            conn = ds.getConnection();
+            String sql = "SELECT w.withdrawal_id, w.student_id, s.name as student_name, " +
+                    "d.name as dormitory_name, w.withdrawal_date, w.bank_name, " +
+                    "w.account_number, w.refund_amount, w.withdrawal_status " +
+                    "FROM withdrawal_application w " +
+                    "JOIN admission a ON w.student_id = a.student_id " +
+                    "JOIN student s ON w.student_id = s.student_id " +
+                    "JOIN dormitory d ON a.dormitory_id = d.dormitory_id " +
+                    "WHERE w.withdrawal_status = '승인' " +
+                    "ORDER BY d.name, s.name";
+
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                WithdrawDetailDTO withdraw = new WithdrawDetailDTO();
+                withdraw.setWithdrawalId(rs.getInt("withdrawal_id"));
+                withdraw.setStudentId(rs.getInt("student_id"));
+                withdraw.setStudentName(rs.getString("student_name"));
+                withdraw.setDormitoryName(rs.getString("dormitory_name"));
+                withdraw.setWithdrawalDate(rs.getString("withdrawal_date"));
+                withdraw.setBankName(rs.getString("bank_name"));
+                withdraw.setAccountNumber(rs.getString("account_number"));
+                withdraw.setRefundAmount(rs.getInt("refund_amount"));
+                withdraw.setWithdrawalStatus(rs.getString("withdrawal_status"));
+                withdraws.add(withdraw);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources(conn, pstmt, rs);
+        }
+        return withdraws;
+    }
 
     public List<WithdrawDTO> getApprovedWithdraws() {
         Connection conn = null;

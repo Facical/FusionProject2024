@@ -37,7 +37,7 @@ public class RoomDAO {
         }
     }
 
-    public RoomDTO getRoomInfo(int dormitory_id){
+    public RoomDTO getRoomInfo(int room_id){
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -45,9 +45,9 @@ public class RoomDAO {
 
         try {
             conn = ds.getConnection();
-            String sql = "SELECT * FROM room WHERE dormitory_id = ?";
+            String sql = "SELECT * FROM room WHERE room_id = ?";
             pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, dormitory_id);
+            pstmt.setInt(1, room_id);
             rs = pstmt.executeQuery();
 
             if (rs.next()) {

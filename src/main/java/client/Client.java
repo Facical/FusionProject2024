@@ -337,18 +337,39 @@ public class Client {
                     String filePath = br.readLine();
 
                     File file = new File(filePath);
-                    if (!file.exists()) {
+                    if (!file.exists() || !file.canRead()) {
                         System.out.println("파일이 존재하지 않습니다.");
                         break;
                     }
 
-                    byte[] fileData = Files.readAllBytes(file.toPath());
                     String fileName = file.getName();
-                    String fileType = fileName.substring(fileName.lastIndexOf(".") + 1);
+                    String fileType = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+
+                    if (!fileType.equals("jpg") && !fileType.equals("jpeg") && !fileType.equals("png")) {
+                        System.out.println("지원되지 않는 파일 형식입니다. (jpg, jpeg, png만 가능)");
+                        break;
+                    }
+
+                    byte[] fileData = Files.readAllBytes(file.toPath());
+                    if (fileData == null || fileData.length == 0) {
+                        System.out.println("파일 데이터가 비어 있습니다.");
+                        break; // 비어 있는 데이터 처리 종료
+                    }
+
+                    // 파일 크기 제한 추가 (10MB)
+                    if (fileData.length > 10 * 1024 * 1024) {
+                        System.out.println("파일 크기가 너무 큽니다. (최대 10MB)");
+                        break;
+                    }
+
+                    String encodedData = Base64.getEncoder().encodeToString(fileData);
+                    System.out.println("Encoded Data Length: " + encodedData.length()); // 디버깅용 로그
+
+
 
                     String certificateData = String.format("%d,%s,%s,%s",
                             studentId,
-                            Base64.getEncoder().encodeToString(fileData),
+                            encodedData,
                             fileName,
                             fileType);
 
@@ -367,6 +388,8 @@ public class Client {
                         System.out.println("결핵진단서 제출 실패: " + rxMsg.getData());
                     }
                     break;
+
+
                 case 6:
                     System.out.println("퇴사 신청 메뉴 입니다.");
                     System.out.println("환불 받으실 은행 이름, 계좌 번호, 퇴사 신청 사유를 입력해주세요.");
@@ -599,7 +622,7 @@ public class Client {
                     if (rxMsg.getType() == Packet.RESULT) {
                         if (rxMsg.getDetail() == Packet.SUCCESS) {
                             String[] certificates = rxMsg.getData().split(";");
-                            if (certificates.length > 0) {
+                            if (certificates.length > 0 && !certificates[0].trim().isEmpty()) {
                                 for (String cert : certificates) {
                                     String[] parts = cert.split(",");
                                     System.out.println("학생 ID: " + parts[0]);
@@ -612,21 +635,64 @@ public class Client {
                                 String answer = br.readLine().trim().toUpperCase();
 
                                 if (answer.equals("Y")) {
-                                    System.out.print("저장할 디렉토리 경로를 입력하세요: ");
-                                    String savePath = br.readLine().trim();
-
-                                    // 다운로드 요청
-                                    String downloadData = "DOWNLOAD," + savePath;
+                                    // 단순히 "DOWNLOAD" 요청을 보내서 서버가 Base64 인코딩된 파일 리스트를 보내도록 수정 필요
                                     txMsg = Message.makeMessage(Packet.REQUEST,
                                             Packet.SUBMIT_CERTIFICATE,
                                             Packet.NOT_USED,
-                                            downloadData);
+                                            "DOWNLOAD");
                                     packet = Packet.makePacket(txMsg);
                                     out.write(packet);
                                     out.flush();
 
                                     rxMsg = Message.readMessage(in);
                                     if (rxMsg.getDetail() == Packet.SUCCESS) {
+                                        System.out.print("저장할 디렉토리 경로를 입력하세요: ");
+                                        String savePath = br.readLine().trim();
+
+                                        // 서버에서 받은 데이터: "studentId,fileName,fileType,base64data;..."
+                                        String serverData = rxMsg.getData().trim();
+                                        String[] entries = serverData.split(";");
+
+                                        // 디렉토리 존재 여부 확인 및 생성
+                                        File dir = new File(savePath);
+                                        if (!dir.exists()) {
+                                            dir.mkdirs();
+                                        }
+
+                                        for (String entry : entries) {
+                                            entry = entry.trim();
+                                            if (entry.isEmpty()) continue;
+
+                                            String[] fileParts = entry.split(",");
+                                            if (fileParts.length != 4) {
+                                                System.err.println("잘못된 데이터 포맷: " + entry);
+                                                continue;
+                                            }
+
+                                            String sid = fileParts[0].trim();
+                                            String fName = fileParts[1].trim();
+                                            String fType = fileParts[2].trim();
+                                            String base64Data = fileParts[3].trim();
+
+                                            if (base64Data.isEmpty()) {
+                                                System.err.println("Base64 데이터가 비어있습니다: " + entry);
+                                                continue;
+                                            }
+
+
+                                            // 여기서 실제 파일 쓰기
+                                            // 클라이언트 로컬 디스크에 파일 저장
+                                            try {
+                                                byte[] fileData = Base64.getDecoder().decode(base64Data);
+                                                // fileData를 로컬에 저장
+                                                File outFile = new File(savePath, sid + "_" + fName);
+                                                Files.write(outFile.toPath(), fileData);
+                                            } catch (IllegalArgumentException e) {
+                                                // base64 디코딩 오류 발생 시, 어떤 문자열인지 출력해서 디버깅
+                                                System.err.println("Base64 디코딩 오류 발생: " + base64Data);
+                                                e.printStackTrace();
+                                            }
+                                        }
                                         System.out.println("모든 진단서가 다운로드되었습니다.");
                                     } else {
                                         System.out.println("다운로드 실패: " + rxMsg.getData());

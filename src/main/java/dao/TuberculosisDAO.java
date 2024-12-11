@@ -18,6 +18,7 @@ public class TuberculosisDAO {
         Connection conn = null;
         PreparedStatement pstmt = null;
 
+
         try {
             conn = ds.getConnection();
             String sql = "INSERT INTO tuberculosis_certificate (student_id, submission_date, due_date, image_data, file_name, file_type) " +

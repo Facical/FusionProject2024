@@ -55,6 +55,7 @@ public class Threads extends Thread {
 
     private DataInputStream in;
     private DataOutputStream out;
+    private int studentID;
     byte[] header = null;
     byte[] body = null;
     byte[] packet = null;
@@ -63,6 +64,7 @@ public class Threads extends Thread {
     Message rxMsg = null;
     private static int loggedInUserId = -1;
     public Threads(Socket socket) {
+        this.studentID = 0;
         this.socket = socket;
         this.userDAO = new UserDAO();
         this.scheduleService = new ScheduleService();
@@ -89,7 +91,7 @@ public class Threads extends Thread {
 
     public void run() {
         try {
-            int studentID = 0;
+            //int studentID = 0;
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
 
@@ -257,36 +259,50 @@ public class Threads extends Thread {
 
                                 // 다운로드 요청 처리
                                 if (certParts[0].equals("DOWNLOAD")) {
-                                    String savePath = certParts[1];
+                                    // 클라이언트가 다운로드 요청을 할 때, 이제 서버는 파일을 쓰지 않고,
+                                    // 모든 인증서를 Base64로 인코딩하여 클라이언트에 전송합니다.
+
                                     List<TuberculosisDTO> allCertificates = tuberculosisService.getCertificates();
-                                    boolean downloadSuccess = true;
-                                    String errorMessage = "";
-
-                                    for (TuberculosisDTO certDTO : allCertificates) {
-                                        try {
-                                            if (certDTO.getImageData() != null) {
-                                                String fileName = certDTO.getStudentId() + "_" + certDTO.getFileName();
-                                                String filePath = savePath + File.separator + fileName;
-                                                Files.write(Paths.get(filePath), certDTO.getImageData());
-                                            }
-                                        } catch (IOException e) {
-                                            downloadSuccess = false;
-                                            errorMessage = e.getMessage();
-                                            break;
-                                        }
-                                    }
-
-                                    if (downloadSuccess) {
-                                        txMsg = Message.makeMessage(Packet.RESULT,
-                                                Packet.SUBMIT_CERTIFICATE,
-                                                Packet.SUCCESS,
-                                                "모든 진단서 다운로드 완료");
-                                    } else {
+                                    if (allCertificates == null || allCertificates.isEmpty()) {
                                         txMsg = Message.makeMessage(Packet.RESULT,
                                                 Packet.SUBMIT_CERTIFICATE,
                                                 Packet.FAIL,
-                                                "다운로드 실패: " + errorMessage);
+                                                "No certificates found.");
+                                    } else {
+                                        // "studentId,fileName,fileType,base64data;" 형태로 여러 파일을 전송
+                                        StringBuilder sb = new StringBuilder();
+                                        for (TuberculosisDTO certDTO : allCertificates) {
+                                            if (certDTO.getImageData() == null) continue;
+                                            String base64Data = Base64.getEncoder().encodeToString(certDTO.getImageData());
+                                            sb.append(certDTO.getStudentId()).append(",")
+                                                    .append(certDTO.getFileName()).append(",")
+                                                    .append(certDTO.getFileType()).append(",")
+                                                    .append(base64Data).append(";");
+                                        }
+
+                                        if (sb.length() > 0) {
+                                            sb.deleteCharAt(sb.length() - 1);
+                                        }
+                                        String sendData = sb.toString();
+                                        if (sendData.isEmpty()) {
+                                            txMsg = Message.makeMessage(Packet.RESULT,
+                                                    Packet.SUBMIT_CERTIFICATE,
+                                                    Packet.FAIL,
+                                                    "No valid certificates to download.");
+                                        } else {
+                                            // 마지막 ; 제거
+                                            sendData = sendData.substring(0, sendData.length() - 1);
+                                            txMsg = Message.makeMessage(Packet.RESULT,
+                                                    Packet.SUBMIT_CERTIFICATE,
+                                                    Packet.SUCCESS,
+                                                    sendData);
+                                        }
                                     }
+
+                                    packet = Packet.makePacket(txMsg);
+                                    out.write(packet);
+                                    out.flush();
+
                                 }
                                 // 제출 처리
                                 else {
@@ -302,7 +318,19 @@ public class Threads extends Thread {
                                     cert.setFileType(fileType);
 
                                     String submitResult = tuberculosisService.submitCertificate(cert);
-
+                                    try {
+                                        fileData = Base64.getDecoder().decode(certParts[1]);
+                                        if (fileData == null || fileData.length == 0) {
+                                            throw new IllegalArgumentException("디코딩된 파일 데이터가 비어 있습니다.");
+                                        }
+                                    } catch (IllegalArgumentException e) {
+                                        System.err.println("Base64 디코딩 실패: " + e.getMessage());
+                                        txMsg = Message.makeMessage(Packet.RESULT,
+                                                Packet.SUBMIT_CERTIFICATE,
+                                                Packet.FAIL,
+                                                "잘못된 Base64 데이터입니다.");
+                                        break; // 잘못된 데이터로 인한 처리 종료
+                                    }
                                     if (submitResult.equals("성공")) {
                                         txMsg = Message.makeMessage(Packet.RESULT,
                                                 Packet.SUBMIT_CERTIFICATE,
@@ -776,7 +804,7 @@ public class Threads extends Thread {
                         }
                         break;
 
-                        // TYPE = 0x02
+                    // TYPE = 0x02
                     case Packet.RESPONSE:
                         System.out.println("로그인 응답 정보 도착");
                         String data = rxMsg.getData();
@@ -827,7 +855,7 @@ public class Threads extends Thread {
 
                     case Packet.RESULT:
                         if(Packet.END_CONNECT == rxMsg.getDetail()){
-                        return;
+                            return;
                         }
                         break;
                 }

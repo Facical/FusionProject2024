@@ -13,7 +13,6 @@ public class AdmissionService {
     public AdmissionDTO findAdmission(int id){
         return admissionDAO.findAdmission(id);
     }
-
-    //public boolean findCheckAdmission(){return admissionDAO.findCheckAdmission();}
+    
 
 }

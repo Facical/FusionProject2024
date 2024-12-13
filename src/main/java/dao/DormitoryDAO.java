@@ -28,7 +28,6 @@ public class DormitoryDAO {
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, dormitoryDTO.getDormitoryId());
             rs = pstmt.executeQuery();
-
             if (rs.next()) {
                 dormitoryDTO.setDormitoryId(rs.getInt("dormitory_id"));
             }

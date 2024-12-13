@@ -146,17 +146,14 @@ public class Client {
                     }
                     break;
 
-                case 2: // 1.2 기능
+                case 2: // 학생 기능 1.2 : 입사 신청
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_DATE, Packet.APPLY_ADMISSION, "")));
                     out.flush();
-
                     rxMsg = Message.readMessage(in);
                     if(rxMsg.getDetail() == Packet.FAIL){
                         System.out.println("생활관 입사 신청 기간이 아닙니다!");
                         break;
                     }
-
-
                     System.out.println("============= 입사 신청 =============");
                     System.out.println("오름관 1동, 푸름관 3동 : 여자만 신청 가능");
                     System.out.println();
@@ -166,6 +163,7 @@ public class Client {
                     String secondDormitory = "";
                     String secondDormitoryMeal = "";
                     while (true) {
+                        // 1지망 생활관 식사 입력
                         System.out.print("1지망 생활관 입력 : ");
                         firstDormitory = br.readLine();
                         if (gender.equals("M") && (firstDormitory.equals("오름관1동") || firstDormitory.equals("푸름관3동"))) {
@@ -204,14 +202,14 @@ public class Client {
                         System.out.print(secondDormitory + "의 식사 입력 (5일식, 7일식, 선택안함) : ");
                     }
                     secondDormitoryMeal = br.readLine();
-
+                    // 1지망, 2지망 생활관비, 급식비 정보를 패킷으로 만든 후 서버에게 전송
                     String newData = firstDormitory + "," + firstDormitoryMeal + "," + secondDormitory + "," + secondDormitoryMeal;
                     txMsg = Message.makeMessage(Packet.REQUEST, Packet.APPLY_ADMISSION,
                             Packet.NOT_USED, newData);
                     packet = Packet.makePacket(txMsg);
                     out.write(packet);
                     out.flush();
-
+                    // 서버로부터 응답 메시지 수신
                     rxMsg = new Message();
                     header = new byte[Packet.LEN_HEADER];
                     in.read(header);
@@ -219,7 +217,7 @@ public class Client {
                     body = new byte[rxMsg.getLength()];
                     in.read(body);
                     Message.makeMessageBody(rxMsg, body);
-
+                    // 서버로부터 결과 수신
                     if (rxMsg.getType() == Packet.RESULT) {
                         if (rxMsg.getDetail() == Packet.SUCCESS) {
                             System.out.println("입사 신청 성공!");
@@ -230,8 +228,7 @@ public class Client {
 
                     break;
 
-                case 3: // 1.3 기능
-                    //합격 여부 및 호실 확인
+                case 3:
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_DATE, Packet.CHECK_ADMISSION, "")));
                     out.flush();
 
@@ -362,6 +359,11 @@ public class Client {
                     String fileName = file.getName();
                     String fileType = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
 
+                    if (!fileType.equals("jpg") && !fileType.equals("jpeg") && !fileType.equals("png")) {
+                        System.out.println("지원되지 않는 파일 형식입니다. (jpg, jpeg, png만 가능)");
+                        break;
+                    }
+
                     // 허용된 파일 형식인지 검사 (jpg, jpeg, png만 허용)
                     if (!fileType.equals("jpg") && !fileType.equals("jpeg") && !fileType.equals("png")) {
                         System.out.println("지원되지 않는 파일 형식입니다. (jpg, jpeg, png만 가능)");
@@ -370,6 +372,21 @@ public class Client {
 
                     // 파일을 바이트 배열로 읽기
                     byte[] fileData = Files.readAllBytes(file.toPath());
+                    if (fileData == null || fileData.length == 0) {
+                        System.out.println("파일 데이터가 비어 있습니다.");
+                        break; // 비어 있는 데이터 처리 종료
+                    }
+
+                    // 파일 크기 제한 추가 (10MB)
+                    if (fileData.length > 10 * 1024 * 1024) {
+                        System.out.println("파일 크기가 너무 큽니다. (최대 10MB)");
+                        break;
+                    }
+
+                    String encodedData = Base64.getEncoder().encodeToString(fileData);
+                    System.out.println("Encoded Data Length: " + encodedData.length()); // 디버깅용 로그
+
+
                     if (fileData == null || fileData.length == 0) {
                         System.out.println("파일 데이터가 비어 있습니다.");
                         break;
@@ -382,7 +399,7 @@ public class Client {
                     }
 
                     // 파일 데이터를 Base64로 인코딩
-                    String encodedData = Base64.getEncoder().encodeToString(fileData);
+                    encodedData = Base64.getEncoder().encodeToString(fileData);
                     System.out.println("Encoded Data Length: " + encodedData.length()); // 디버깅용 로그
 
                     // 전송할 데이터 포맷 생성 (학번,인코딩된데이터,파일명,파일타입)
@@ -510,7 +527,7 @@ public class Client {
                     }
                     break;
 
-                case 2: // 2.2 기능
+                case 2: // 관리자 기능 2.2 : 생활관 사용료 및 급식비 등록
                     System.out.println("=== 생활관 사용료 및 급식비 등록 ===");
                     System.out.print("생활관 입력 : ");
                     String dormitoryName = br.readLine();
@@ -526,14 +543,14 @@ public class Client {
                     if (dormitoryName.equals("오름관2동") || dormitoryName.equals("오름관3동")) {
                         newData += ",0"; // "선택안함" 급식비 0 추가
                     }
+                    // 생활관별 생활관비 및 급식비 정보를 패킷으로 만든 후 서버로 전송
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.REGISTER_FEE,
                             Packet.NOT_USED, newData);
                     packet = Packet.makePacket(txMsg);
                     out.write(packet);
                     out.flush();
-
-
+                    // 서버로 부터 응답 메시지 수신
                     rxMsg = new Message();
                     header = new byte[Packet.LEN_HEADER];
                     in.read(header);
@@ -541,7 +558,7 @@ public class Client {
                     body = new byte[rxMsg.getLength()];
                     in.read(body);
                     Message.makeMessageBody(rxMsg, body);
-
+                    // 서버로부터 결과 수신
                     if (rxMsg.getDetail() == Packet.SUCCESS) {
                         System.out.println("생활관 사용료 및 급식비 등록 성공!");
                     } else {

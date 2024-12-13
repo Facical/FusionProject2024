@@ -18,6 +18,8 @@ public class ApplicationDAO {
         ResultSet rs = null;
         ApplicationDTO applicationDTO = null;
 
+
+
     public ApplicationDTO getApplicationInfo(int studentID){
         /*
         학번을 받아 해당 학번의 학생의 신청 정보를 가져오는 함수
@@ -58,6 +60,7 @@ public class ApplicationDAO {
 
         try {
             conn = ds.getConnection();
+            // room_number,room_type, capacity, 일단 제외
             String sql = "INSERT INTO application (student_id,application_date) VALUES (?, ?)";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, applicationDTO.getStudentId());
@@ -112,4 +115,7 @@ public class ApplicationDAO {
             e.printStackTrace();
         }
     }
+
+
+
 }

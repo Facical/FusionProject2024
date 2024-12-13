@@ -18,11 +18,6 @@ public class ApplicationDAO {
         ResultSet rs = null;
         ApplicationDTO applicationDTO = null;
 
-    /*public ApplicationDTO getAllApplicationInfo()
-    {
-
-    }*/
-
     public ApplicationDTO getApplicationInfo(int studentID){
         /*
         학번을 받아 해당 학번의 학생의 신청 정보를 가져오는 함수
@@ -56,13 +51,13 @@ public class ApplicationDAO {
 
     }
 
-    public boolean applyAdmission(ApplicationDTO applicationDTO) {  // boolean 대신 int 반환
+    // 지원 날짜를 갱신하는 함수
+    public boolean applyAdmission(ApplicationDTO applicationDTO) {
         Connection conn = null;
         PreparedStatement pstmt = null;
 
         try {
             conn = ds.getConnection();
-            // room_number,room_type, capacity, 일단 제외
             String sql = "INSERT INTO application (student_id,application_date) VALUES (?, ?)";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, applicationDTO.getStudentId());
@@ -81,6 +76,7 @@ public class ApplicationDAO {
 
     }
 
+    // 학생이 입사 지원을 하였는지 DB에서 확인하는 함수
     public int findApplicationId(int studentId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -116,14 +112,4 @@ public class ApplicationDAO {
             e.printStackTrace();
         }
     }
-
-    private void closeResources(Connection conn, PreparedStatement pstmt) {
-        try {
-            if (pstmt != null) pstmt.close();
-            if (conn != null) conn.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
 }

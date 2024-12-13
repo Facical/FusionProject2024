@@ -46,22 +46,4 @@ public class WithdrawService {
         List<WithdrawDTO> approvedWithdraws = withdrawDAO.getApprovedWithdraws();
         return refundDAO.processRefunds(approvedWithdraws);
     }
-
-//    public String getApprovedWithdrawData() {
-//        List<WithdrawDTO> withdraws = withdrawDAO.getApprovedWithdraws();
-//        StringBuilder sb = new StringBuilder();
-//
-//        for (WithdrawDTO withdraw : withdraws) {
-//            sb.append(withdraw.getStudentId()).append(",")
-//                    .append(withdraw.getWithdrawalDate()).append(",")
-//                    .append(withdraw.getBankName()).append(",")
-//                    .append(withdraw.getAccountNumber()).append(",")
-//                    .append(withdraw.getRefundAmount()).append(";");
-//        }
-//
-//        return sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
-//    }
-//
-
-
 }

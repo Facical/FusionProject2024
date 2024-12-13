@@ -88,34 +88,6 @@ public class WithdrawDAO {
         return withdraws;
     }
 
-    public List<WithdrawDTO> getAllWithdraws() {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        List<WithdrawDTO> withdraws = new ArrayList<>();
-
-        try {
-            conn = ds.getConnection();
-            String sql = "SELECT * FROM withdrawal_application ORDER BY withdrawal_date";
-            pstmt = conn.prepareStatement(sql);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                WithdrawDTO withdraw = new WithdrawDTO();
-                withdraw.setWithdrawalId(rs.getInt("withdrawal_id"));
-                withdraw.setStudentId(rs.getInt("student_id"));
-                withdraw.setWithdrawalDate(rs.getString("withdrawal_date"));
-                withdraw.setBankName(rs.getString("bank_name"));
-                withdraw.setAccountNumber(rs.getInt("account_number"));
-                withdraws.add(withdraw);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            closeResources(conn, pstmt, rs);
-        }
-        return withdraws;
-    }
     public WithdrawDTO getWithdrawInfo(int studentID){
         /*
         학생의 학번을 기준으로 환불 정보를 가져오는 함수

@@ -13,6 +13,8 @@ import java.util.List;
 public class ApplicantDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
+    // 입사 신청자 정보를 받아오는 메서드
+    // Application, Application_Preference의 필요한 정보를 모두 가져와서 Applicant에 담는다
     public List<ApplicantDTO> getApplicantsWithPreferences() {
         List<ApplicantDTO> applicants = new ArrayList<>();
         String sql = "SELECT " +

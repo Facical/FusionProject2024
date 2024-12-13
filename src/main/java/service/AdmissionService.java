@@ -14,6 +14,4 @@ public class AdmissionService {
         return admissionDAO.findAdmission(id);
     }
 
-    //public boolean findCheckAdmission(){return admissionDAO.findCheckAdmission();}
-
 }

@@ -8,6 +8,7 @@ import java.sql.*;
 public class UserDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
+    // 유저 정보를 가져오는 함수 - 로그인시 필요
     public UserDTO findUser(int userId) {
         Connection conn = null;
         PreparedStatement pstmt = null;

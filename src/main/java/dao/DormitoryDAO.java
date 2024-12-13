@@ -15,6 +15,7 @@ import java.util.List;
 public class DormitoryDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
+    // dormitory_id를 받아오는 함수
     public DormitoryDTO findDormitoryId() {
         Connection conn = null;
         PreparedStatement pstmt = null;

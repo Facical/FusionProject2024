@@ -114,22 +114,22 @@ public class Threads extends Thread {
                         byte code = rxMsg.getCode();
 
                         switch(code) {
-                            //학생 기능 1번 (code 1) : 선발 일정 및 비용 확인
+
+                            // 1.1 선발 일정 조회 기능
                             case Packet.CHECK_SCHEDULE:
+                                // ScheduleService를 통해 저장된 일정 리스트 가져오기
                                 List<ScheduleDTO> schedules = scheduleService.getSchedules();
 
                                 if (!schedules.isEmpty()) {
+                                    // 일정이 존재할 경우 데이터를 포맷하여 응답 메시지 생성
                                     String scheduleData = scheduleService.formatScheduleData(schedules);
-                                    txMsg = Message.makeMessage(Packet.RESULT,
-                                            Packet.CHECK_SCHEDULE,
-                                            Packet.SUCCESS,
-                                            scheduleData);
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.SUCCESS, scheduleData);
                                 } else {
-                                    txMsg = Message.makeMessage(Packet.RESULT,
-                                            Packet.CHECK_SCHEDULE,
-                                            Packet.FAIL,
-                                            "일정이 없습니다.");
+                                    // 일정이 없을 경우 실패 메시지 생성
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.FAIL, "일정이 없습니다.");
                                 }
+
+                                // 메시지를 패킷으로 변환하여 클라이언트로 전송
                                 packet = Packet.makePacket(txMsg);
                                 out.write(packet);
                                 out.flush();
@@ -256,45 +256,53 @@ public class Threads extends Thread {
                                 }
                                 break;
 
-                            //학생 기능 5번 (code 5) : 결핵진단서 제출
+                            //1.5 결핵진단서 제출 기능
                             case Packet.SUBMIT_CERTIFICATE:
+                                // 수신된 데이터를 콤마로 구분하여 분리
                                 String[] certParts = rxMsg.getData().split(",");
 
-                                // 다운로드 요청 처리
+                                // 다운로드 요청인 경우 처리
                                 if (certParts[0].equals("DOWNLOAD")) {
-                                    // 클라이언트가 다운로드 요청을 할 때, 이제 서버는 파일을 쓰지 않고,
-                                    // 모든 인증서를 Base64로 인코딩하여 클라이언트에 전송합니다.
-
+                                    // 모든 결핵진단서 정보를 데이터베이스에서 조회
                                     List<TuberculosisDTO> allCertificates = tuberculosisService.getCertificates();
                                     if (allCertificates == null || allCertificates.isEmpty()) {
+                                        // 제출된 진단서가 없는 경우
                                         txMsg = Message.makeMessage(Packet.RESULT,
                                                 Packet.SUBMIT_CERTIFICATE,
                                                 Packet.FAIL,
                                                 "No certificates found.");
                                     } else {
-                                        // "studentId,fileName,fileType,base64data;" 형태로 여러 파일을 전송
+                                        // 조회된 진단서들을 Base64로 인코딩하여 전송 데이터 생성
+                                        // 형식: "studentId,fileName,fileType,base64data;"
                                         StringBuilder sb = new StringBuilder();
                                         for (TuberculosisDTO certDTO : allCertificates) {
+                                            // 이미지 데이터가 있는 경우만 처리
                                             if (certDTO.getImageData() == null) continue;
+
+                                            // 이미지 데이터를 Base64로 인코딩
                                             String base64Data = Base64.getEncoder().encodeToString(certDTO.getImageData());
+
+                                            // 진단서 정보를 문자열로 구성
                                             sb.append(certDTO.getStudentId()).append(",")
                                                     .append(certDTO.getFileName()).append(",")
                                                     .append(certDTO.getFileType()).append(",")
                                                     .append(base64Data).append(";");
                                         }
 
+                                        // 마지막 세미콜론 제거
                                         if (sb.length() > 0) {
                                             sb.deleteCharAt(sb.length() - 1);
                                         }
+
                                         String sendData = sb.toString();
                                         if (sendData.isEmpty()) {
+                                            // 유효한 진단서가 없는 경우
                                             txMsg = Message.makeMessage(Packet.RESULT,
                                                     Packet.SUBMIT_CERTIFICATE,
                                                     Packet.FAIL,
                                                     "No valid certificates to download.");
                                         } else {
-                                            // 마지막 ; 제거
-                                            sendData = sendData.substring(0, sendData.length() - 1);
+                                            // 전송 데이터 생성
                                             txMsg = Message.makeMessage(Packet.RESULT,
                                                     Packet.SUBMIT_CERTIFICATE,
                                                     Packet.SUCCESS,
@@ -302,38 +310,46 @@ public class Threads extends Thread {
                                         }
                                     }
 
+                                    // 응답 전송
                                     packet = Packet.makePacket(txMsg);
                                     out.write(packet);
                                     out.flush();
-
                                 }
-                                // 제출 처리
+                                // 진단서 제출 요청 처리
                                 else {
+                                    // 클라이언트에서 전송한 데이터 파싱
                                     int studentId = Integer.parseInt(certParts[0]);
                                     byte[] fileData = Base64.getDecoder().decode(certParts[1]);
                                     String fileName = certParts[2];
                                     String fileType = certParts[3];
 
+                                    // 진단서 DTO 객체 생성
                                     TuberculosisDTO cert = new TuberculosisDTO();
                                     cert.setStudentId(studentId);
                                     cert.setImageData(fileData);
                                     cert.setFileName(fileName);
                                     cert.setFileType(fileType);
 
+                                    // 진단서 제출 처리
                                     String submitResult = tuberculosisService.submitCertificate(cert);
+
                                     try {
+                                        // Base64 디코딩 검증
                                         fileData = Base64.getDecoder().decode(certParts[1]);
                                         if (fileData == null || fileData.length == 0) {
                                             throw new IllegalArgumentException("디코딩된 파일 데이터가 비어 있습니다.");
                                         }
                                     } catch (IllegalArgumentException e) {
+                                        // Base64 디코딩 실패 처리
                                         System.err.println("Base64 디코딩 실패: " + e.getMessage());
                                         txMsg = Message.makeMessage(Packet.RESULT,
                                                 Packet.SUBMIT_CERTIFICATE,
                                                 Packet.FAIL,
                                                 "잘못된 Base64 데이터입니다.");
-                                        break; // 잘못된 데이터로 인한 처리 종료
+                                        break;
                                     }
+
+                                    // 제출 결과에 따른 응답 메시지 생성
                                     if (submitResult.equals("성공")) {
                                         txMsg = Message.makeMessage(Packet.RESULT,
                                                 Packet.SUBMIT_CERTIFICATE,
@@ -345,6 +361,8 @@ public class Threads extends Thread {
                                                 Packet.FAIL,
                                                 submitResult);
                                     }
+
+                                    // 응답 전송
                                     packet = Packet.makePacket(txMsg);
                                     out.write(packet);
                                     out.flush();
@@ -453,59 +471,55 @@ public class Threads extends Thread {
                                 }
                                 break;
 
-                            //관리자 기능 1번 (code 8) : 선발 일정 등록
+                            // 2.1 선발 일정 등록 기능
                             case Packet.REGISTER_SCHEDULE:
-                                // 관리자의 일정 등록 처리
+                                // 클라이언트로부터 전송된 일정 데이터 수신
                                 String scheduleData = rxMsg.getData();
                                 try {
-                                    // scheduleData 파싱 (형식: periodName,startDate,endDate)
+                                    // 수신된 데이터 파싱 (형식: periodName,startDate,endDate)
                                     String[] parts = scheduleData.split(",");
                                     if (parts.length != 3) {
+                                        // 데이터 형식이 올바르지 않은 경우 예외 발생
                                         throw new IllegalArgumentException("잘못된 데이터 형식");
                                     }
 
+                                    // 파싱된 데이터를 기반으로 ScheduleDTO 객체 생성 및 설정
                                     ScheduleDTO newSchedule = new ScheduleDTO();
-                                    newSchedule.setPeriodName(parts[0]);
+                                    newSchedule.setPeriodName(parts[0]); // 기간명 설정
 
-// 날짜와 시간 분리
+                                    // 시작일 및 시간 분리
                                     String[] startDateTime = parts[1].split(" ");
                                     String[] endDateTime = parts[2].split(" ");
 
-                                    newSchedule.setStartDate(startDateTime[0]);
-                                    newSchedule.setStartHour(startDateTime[1]);
-                                    newSchedule.setEndDate(endDateTime[0]);
-                                    newSchedule.setEndHour(endDateTime[1]);
-                                    // 서비스를 통해 일정 등록
+                                    newSchedule.setStartDate(startDateTime[0]); // 시작 날짜 설정
+                                    newSchedule.setStartHour(startDateTime[1]); // 시작 시간 설정
+                                    newSchedule.setEndDate(endDateTime[0]); // 종료 날짜 설정
+                                    newSchedule.setEndHour(endDateTime[1]); // 종료 시간 설정
+
+                                    // ScheduleService를 통해 일정 등록 처리
                                     boolean success = scheduleService.registerSchedule(newSchedule);
 
                                     if (success) {
-                                        txMsg = Message.makeMessage(Packet.RESULT,
-                                                Packet.REGISTER_SCHEDULE,
-                                                Packet.SUCCESS,
-                                                "일정 등록이 완료되었습니다.");
+                                        // 일정 등록 성공 시 성공 응답 메시지 생성
+                                        txMsg = Message.makeMessage(Packet.RESULT, Packet.REGISTER_SCHEDULE, Packet.SUCCESS, "일정 등록이 완료되었습니다.");
                                         System.out.println("Schedule registered successfully: " + newSchedule.getPeriodName());
                                     } else {
-                                        txMsg = Message.makeMessage(Packet.RESULT,
-                                                Packet.REGISTER_SCHEDULE,
-                                                Packet.FAIL,
-                                                "일정 등록에 실패했습니다.");
+                                        // 일정 등록 실패 시 실패 응답 메시지 생성
+                                        txMsg = Message.makeMessage(Packet.RESULT, Packet.REGISTER_SCHEDULE, Packet.FAIL, "일정 등록에 실패했습니다.");
                                         System.out.println("Schedule registration failed");
                                     }
 
                                 } catch (IllegalArgumentException e) {
-                                    txMsg = Message.makeMessage(Packet.RESULT,
-                                            Packet.REGISTER_SCHEDULE,
-                                            Packet.FAIL,
-                                            "입력 데이터 형식이 잘못되었습니다.");
+                                    // 데이터 형식 오류 처리
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.REGISTER_SCHEDULE, Packet.FAIL, "입력 데이터 형식이 잘못되었습니다.");
                                     System.err.println("Data format error: " + e.getMessage());
                                 } catch (Exception e) {
-                                    txMsg = Message.makeMessage(Packet.RESULT,
-                                            Packet.REGISTER_SCHEDULE,
-                                            Packet.FAIL,
-                                            "일정 등록 중 오류가 발생했습니다.");
+                                    // 예상치 못한 오류 처리
+                                    txMsg = Message.makeMessage(Packet.RESULT, Packet.REGISTER_SCHEDULE, Packet.FAIL, "일정 등록 중 오류가 발생했습니다.");
                                     System.err.println("Unexpected error: " + e.getMessage());
                                 }
 
+                                // 생성된 메시지를 패킷으로 변환하여 클라이언트로 전송
                                 packet = Packet.makePacket(txMsg);
                                 out.write(packet);
                                 out.flush();
@@ -704,10 +718,10 @@ public class Threads extends Thread {
                                 // 요청 받음
                                 List<StudentPaymentDTO> paidStudentList = studentPaymentDAO.getPaidStudentList();
                                 String paidList = StudentPaymentCheckService.ListToString(paidStudentList);
-                                System.out.println(paidList + "test");
+                                System.out.println(paidList);
 
                                 if (paidStudentList.isEmpty())
-                                    System.out.println("질의 똑바로 ㄴㄴ");
+                                    System.out.println("리스트가 비어있습니다.");
 
                                 // 메시지로 작성 후 패킷화 해줌
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_PAID_STUDENTS,
@@ -726,8 +740,8 @@ public class Threads extends Thread {
                                 String unpaidList = StudentPaymentCheckService.ListToString(unpaidStudentList);
 
                                 if (unpaidStudentList.isEmpty())
-                                    System.out.println("질의 똑바로 ㄴㄴ");
-                                System.out.println(unpaidList + "test");
+                                    System.out.println("리스트가 비어있습니다.");
+                                System.out.println(unpaidList);
                                 // 메시지로 작성 후 패킷화 해줌
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_UNPAID_STUDENTS,
                                         Packet.SUCCESS, unpaidList);
@@ -738,53 +752,63 @@ public class Threads extends Thread {
                                 out.flush();
                                 break;
 
-                            //관리자 기능 7번 (code 14) : 결핵진단서 제출 확인
+                            //2.7 결핵진단서 제출 확인 기능
                             case Packet.CHECK_CERTIFICATES:
+                                // 데이터베이스에서 모든 결핵진단서 목록을 조회
                                 List<TuberculosisDTO> certificates = tuberculosisService.getCertificates();
+
+                                // 조회된 진단서 목록을 전송 가능한 문자열 형태로 포맷팅
+                                // 형식: "학번,제출일,제출기한;" 형태의 문자열로 변환
                                 String certListData = tuberculosisService.formatCertificateList(certificates);
 
+                                // 응답 메시지 생성
+                                // - Type: RESULT (처리 결과)
+                                // - Code: CHECK_CERTIFICATES (결핵진단서 확인 기능)
+                                // - Detail: SUCCESS (성공)
+                                // - Data: 포맷팅된 진단서 목록 데이터
                                 txMsg = Message.makeMessage(Packet.RESULT,
                                         Packet.CHECK_CERTIFICATES,
                                         Packet.SUCCESS,
                                         certListData);
+
+                                // 생성된 메시지를 패킷으로 변환
                                 packet = Packet.makePacket(txMsg);
+
+                                // 클라이언트에 전송
                                 out.write(packet);
                                 out.flush();
                                 break;
 
-                            //관리자 기능 8번 (code 15) : 퇴사 신청자 조회 및 환불
+                            // 2.8 퇴사 신청자 조회 및 환불 처리 기능
                             case Packet.PROCESS_WITHDRAWAL:
+                                // 클라이언트로부터 수신된 데이터 확인
                                 if (rxMsg.getData().equals("approved_withdrawals")) {
-                                    WithdrawService withdrawService = new WithdrawService();
-                                    String withdrawData = withdrawService.getApprovedWithdrawData();
+                                    // 승인된 퇴사자 목록 조회
+                                    WithdrawService withdrawService = new WithdrawService(); // WithdrawService 객체 생성
+                                    String withdrawData = withdrawService.getApprovedWithdrawData(); // 승인된 퇴사 데이터 가져오기
 
                                     if (!withdrawData.isEmpty()) {
-                                        txMsg = Message.makeMessage(Packet.RESULT,
-                                                Packet.PROCESS_WITHDRAWAL,
-                                                Packet.SUCCESS,
-                                                withdrawData);
+                                        // 승인된 퇴사자 데이터가 존재하면 성공 응답 메시지 생성
+                                        txMsg = Message.makeMessage(Packet.RESULT, Packet.PROCESS_WITHDRAWAL, Packet.SUCCESS, withdrawData);
                                     } else {
-                                        txMsg = Message.makeMessage(Packet.RESULT,
-                                                Packet.PROCESS_WITHDRAWAL,
-                                                Packet.FAIL,
-                                                "승인된 퇴사 신청자가 없습니다.");
+                                        // 승인된 퇴사자 데이터가 없으면 실패 응답 메시지 생성
+                                        txMsg = Message.makeMessage(Packet.RESULT, Packet.PROCESS_WITHDRAWAL, Packet.FAIL, "승인된 퇴사 신청자가 없습니다.");
                                     }
                                 } else if (rxMsg.getData().equals("process_refunds")) {
-                                    WithdrawService withdrawService = new WithdrawService();
-                                    boolean success = withdrawService.processAllRefunds();
+                                    // 환불 처리 요청
+                                    WithdrawService withdrawService = new WithdrawService(); // WithdrawService 객체 생성
+                                    boolean success = withdrawService.processAllRefunds(); // 모든 환불 처리 수행
 
                                     if (success) {
-                                        txMsg = Message.makeMessage(Packet.RESULT,
-                                                Packet.PROCESS_WITHDRAWAL,
-                                                Packet.SUCCESS,
-                                                "환불 처리 완료");
+                                        // 환불 처리 성공 시 성공 응답 메시지 생성
+                                        txMsg = Message.makeMessage(Packet.RESULT, Packet.PROCESS_WITHDRAWAL, Packet.SUCCESS, "환불 처리 완료");
                                     } else {
-                                        txMsg = Message.makeMessage(Packet.RESULT,
-                                                Packet.PROCESS_WITHDRAWAL,
-                                                Packet.FAIL,
-                                                "환불 처리 실패");
+                                        // 환불 처리 실패 시 실패 응답 메시지 생성
+                                        txMsg = Message.makeMessage(Packet.RESULT, Packet.PROCESS_WITHDRAWAL, Packet.FAIL, "환불 처리 실패");
                                     }
                                 }
+
+                                // 생성된 메시지를 패킷으로 변환하여 클라이언트로 전송
                                 packet = Packet.makePacket(txMsg);
                                 out.write(packet);
                                 out.flush();
@@ -849,7 +873,7 @@ public class Threads extends Thread {
                             }
 
                             else if (loginSuccess && !flag) {
-                                gender = "123";
+                                gender = "";
                                 String responseData = user.getId() + "," + user.getRole() + "," + gender ;
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.SUCCESS, responseData);
@@ -893,7 +917,6 @@ public class Threads extends Thread {
             default: throw new IllegalArgumentException("Invalid dormitory name: " + dormitoryName);
         }
     }
-
     private int mapMealId(String dormitoryName, String mealType) {
         int dormitoryId = mapDormitoryToId(dormitoryName);
         if(mealType.equals("선택안함")){
@@ -906,11 +929,12 @@ public class Threads extends Thread {
     }
 
     public boolean isSuccess(String feature){
+
+
         ScheduleService scheduleService = new ScheduleService();
         List<ScheduleDTO> s = scheduleService.getSchedules();
         for(ScheduleDTO schedule : s){
             if(schedule.getPeriodName().equals(feature)){
-                //String startDate, String startTime, String endDate, String endTime
                 return isWithinPeriod(schedule.getStartDate(),schedule.getStartHour(),schedule.getEndDate(),schedule.getEndHour());
             }
         }

@@ -23,11 +23,6 @@ public class WinnerAssignmentService {
             dormitoryRooms.putIfAbsent(dormitoryName, new ArrayList<>());
             dormitoryRooms.get(dormitoryName).add(room);
         }
-
-        // 디버깅: 기숙사 방 정보 출력
-        /*for (Map.Entry<String, List<RoomDTO>> entry : dormitoryRooms.entrySet()) {
-            System.out.println("기숙사: " + entry.getKey() + ", 방 정보: " + entry.getValue());
-        }*/
     }
 
 
@@ -61,15 +56,12 @@ public class WinnerAssignmentService {
                 .filter(a -> a.getGender().equals("M"))
                 .sorted(Comparator.comparingDouble(ApplicantDTO::getScore).reversed())
                 .collect(Collectors.toList());
-        //System.out.println(maleApplicants.toString());
 
         List<ApplicantDTO> femaleApplicants = applicants.stream()
                 .filter(a -> a.getGender().equals("F"))
                 .sorted(Comparator.comparingDouble(ApplicantDTO::getScore).reversed())
                 .collect(Collectors.toList());
-        //System.out.println(femaleApplicants.toString());
 
-        // 여기서부터 문제임
         // 남학생 기숙사 배정
         assignToDormitories(maleApplicants, maleDormitories);
         assignRoomsAndBeds(maleDormitories);
@@ -106,28 +98,6 @@ public class WinnerAssignmentService {
         }
     }
 
-
-    /*private boolean assignApplicantToDormitory(ApplicantDTO applicant, String dormitoryName, Map<String, List<ApplicantDTO>> dormitories) {
-        List<RoomDTO> rooms = dormitoryRooms.get(dormitoryName);
-
-        // 디버깅: 방 정보 확인
-        if (rooms == null) {
-            System.out.println("기숙사 방 정보가 없습니다: " + dormitoryName);
-            return false;
-        }
-
-        // 디버깅: 기숙사 정원 확인
-        if (isDormitoryFull(rooms)) {
-            System.out.println("기숙사 정원이 가득 찼습니다: " + dormitoryName);
-            return false;
-        }
-
-        // 지원자 배정
-        dormitories.get(dormitoryName).add(applicant);
-
-        System.out.println("지원자가 배정되었습니다: " + applicant + " -> " + dormitoryName);
-        return true;
-    }*/
     private boolean assignApplicantToDormitory(ApplicantDTO applicant, String dormitoryName, Map<String, List<ApplicantDTO>> dormitories) {
         List<RoomDTO> rooms = dormitoryRooms.get(dormitoryName);
 
@@ -195,8 +165,6 @@ public class WinnerAssignmentService {
             }
         }
     }
-
-
 
     public void saveDormitoryAssignments(Map<String, List<ApplicantDTO>> dormitories) {
         AdmissionDAO admissionDAO = new AdmissionDAO();

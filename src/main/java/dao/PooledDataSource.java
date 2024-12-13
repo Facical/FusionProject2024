@@ -16,11 +16,10 @@ public class PooledDataSource {
             Class<PooledDataSource> pooledDataSourceClass = PooledDataSource.class;
             InputStream inputStream = pooledDataSourceClass.getClassLoader().getResourceAsStream("config/db.yml");
             properties.load(inputStream);
-            basicDS.setDriverClassName(properties.getProperty("DRIVER_CLASS")); //loads the jdbc driver
+            basicDS.setDriverClassName(properties.getProperty("DRIVER_CLASS"));
             basicDS.setUrl(properties.getProperty("DB_CONNECTION_URL"));
             basicDS.setUsername(properties.getProperty("DB_USER"));
             basicDS.setPassword(properties.getProperty("DB_PWD"));
-            // Parameters for connection pooling
             basicDS.setInitialSize(10);
             basicDS.setMaxTotal(10);
         } catch (IOException e) {

@@ -16,6 +16,7 @@ public class ApplicationPreferenceDAO {
         Connection conn = null;
         PreparedStatement pstmt = null;
 
+    //  DB로 부터 Application_Preference 정보를 가져오는 함수
     public ApplicationPreferenceDTO getApplicationPreference(int application_id, int dormitory_id) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -36,8 +37,6 @@ public class ApplicationPreferenceDAO {
                 applicationPreferenceDTO = new ApplicationPreferenceDTO();
                 applicationPreferenceDTO.setApplication_preference_id(rs.getInt("application_preference_id"));
                 applicationPreferenceDTO.setApplication_id(rs.getInt("application_id"));
-//                applicationPreferenceDTO.setPreference_first(rs.getInt("preference_first"));
-//                applicationPreferenceDTO.setPreference_second(rs.getInt("preference_second"));
                 applicationPreferenceDTO.setDormitory_id(rs.getInt("dormitory_id"));
                 applicationPreferenceDTO.setMeal_id(rs.getInt("meal_id"));
             }
@@ -49,7 +48,9 @@ public class ApplicationPreferenceDAO {
 
         return applicationPreferenceDTO;
     }
-    public boolean applyPreference(ApplicationPreferenceDTO applicationPreferenceDTO) {  // boolean 대신 int 반환
+
+    // 학생이 입사 신청시 기록한 기숙사 지망과 식사 정보를 DB에 업데이트하는 함수
+    public boolean applyPreference(ApplicationPreferenceDTO applicationPreferenceDTO) {
         Connection conn = null;
         PreparedStatement pstmt = null;
 

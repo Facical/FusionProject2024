@@ -154,8 +154,8 @@ public class Client {
                     System.out.println("============= 입사 신청 =============");
                     System.out.println("오름관 1동, 푸름관 3동 : 여자만 신청 가능");
                     System.out.println();
-                    StudentService studentService = new StudentService();
-                    String gender = studentService.getGender(loggedInUserId);
+                    //StudentService studentService = new StudentService();
+                    //String gender = studentService.getGender(loggedInUserId);
                     String firstDormitory = "";
                     String firstDormitoryMeal = "";
                     String secondDormitory = "";
@@ -236,7 +236,6 @@ public class Client {
                         break;
                     }
 
-
                     txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_ADMISSION,
                             Packet.NOT_USED, "합격 여부 및 호실 확인 조회 요청");
                     packet = Packet.makePacket(txMsg);
@@ -265,19 +264,23 @@ public class Client {
 
 
                 case 4: // 1.4 생활관 비용 확인 및 납부
-
+                    //해당 기능을 확인하기 위해 서버에게 요청
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_DATE, Packet.CHECK_PAY_DORMITORY, "")));
                     out.flush();
 
+                    //받은 데이터로 기능을 사용할 수 있는지 판단
                     rxMsg = Message.readMessage(in);
                     if(rxMsg.getDetail() == Packet.FAIL){
                         System.out.println("생활관 비용 확인 및 납부 기간이 아닙니다!");
                         break;
                     }
 
+                    //납부해야할 금액을 알기 위해 서버에게 요청
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_PAY_DORMITORY, Packet.NOT_USED, "")));
                     out.flush();
 
+
+                    //받은 데이터로부터 금액과 납부여부를 출력
                     rxMsg = Message.readMessage(in);
                     Message.printMessage(rxMsg);
 
@@ -300,6 +303,7 @@ public class Client {
                         System.out.println("납부하시겠습니까? (Y/N): ");
                         char userChoice = sc.next().charAt(0);
 
+                        //납부 여부를 입력받아 결과를 서버에게 전송
                         if(userChoice == 'Y' || userChoice == 'y'){
                             out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, "")));
                             out.flush();
@@ -308,6 +312,8 @@ public class Client {
                             out.flush();
                         }
 
+
+                        //받은 데이터에서 성공여부를 받아서 출력
                         rxMsg = Message.readMessage(in);
                         Message.printMessage(rxMsg);
 
@@ -331,7 +337,6 @@ public class Client {
                         System.out.println("결핵진단서 제출 기간이 아닙니다!");
                         break;
                     }
-
                     System.out.println("=== 결핵진단서 제출 ===");
                     System.out.print("제출할 파일 경로 입력: ");
                     String filePath = br.readLine();
@@ -372,6 +377,7 @@ public class Client {
                             encodedData,
                             fileName,
                             fileType);
+                    //System.out.println("Encoded Data: " + Base64.getEncoder().encodeToString(fileData));
 
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.SUBMIT_CERTIFICATE,
@@ -390,7 +396,8 @@ public class Client {
                     break;
 
 
-                case 6:
+                case 6: //퇴사 신청 메뉴
+                    //퇴사 신청 메뉴 출력 및 입력 받음
                     System.out.println("퇴사 신청 메뉴 입니다.");
                     System.out.println("환불 받으실 은행 이름, 계좌 번호, 퇴사 신청 사유를 입력해주세요.");
                     System.out.print("환불 받으실 은행 이름: ");
@@ -402,10 +409,12 @@ public class Client {
                     System.out.print("퇴사 날짜(ex: 20240101): ");
                     String quitDate = br.readLine();
 
+                    //입력된 정보를 데이터로 서버에게 전송
                     newData = bankName + "," + accountNumber + "," + reason + "," + quitDate;
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.REQUEST_WITHDRAWAL, Packet.NOT_USED, newData)));
                     out.flush();
 
+                    //받은 데이터로부터 정보를 받아 퇴사 신청 성공 여부 출력
                     rxMsg = Message.readMessage(in);
                     Message.printMessage(rxMsg);
 
@@ -417,9 +426,11 @@ public class Client {
                     }
                 break;
                 case 7: //환불 결과 조회
+                    //서버에게 환불 결과 요청
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_REFUND, Packet.NOT_USED, "")));
                     out.flush();
 
+                    //받은 데이터로부터 성공 여부 출력
                     rxMsg = Message.readMessage(in);
                     Message.printMessage(rxMsg);
 
@@ -787,7 +798,6 @@ public class Client {
             }
         }
     }
-
 
     private void closeResources() {
         try {

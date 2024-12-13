@@ -210,15 +210,16 @@ public class Threads extends Thread {
 
                             //학생 기능 4번 (code 4) : 생활관 비용 확인 및 납부
                             case Packet.CHECK_PAY_DORMITORY:
+                                //합격 여부와 기숙사 비용을 얻기 위한 applicationDTO, admissionDTO 생성
                                 applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
-                                //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
-                                // ApplicationPreferenceDTO applicationPreferenceDTO;
+                                //admissionDTO가 비어있으면 합격하지 못한 것이므로 실패를 클라이언트에게 전송
                                 if (admissionDTO == null) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "합격 대상자가 아닙니다.")));
                                     out.flush();
                                 } else {
+                                    //식사 비용을 얻기 위한 applicationPreferenceDTO, roomDTO, mealDTO 생성
                                     applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId(),admissionDTO.getDormitoryId());
 
                                     RoomDTO roomDTO = roomDAO.getRoomInfo(admissionDTO.getRoomId());
@@ -227,19 +228,21 @@ public class Threads extends Thread {
 
                                     String data = roomDTO.getFee() + "," + mealDTO.getFee() + "," + totalFee + "," + admissionDTO.getPaymentStatus();
 
+                                    //비용 정보를 클라이언트에게 전송
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, data)));
                                     out.flush();
 
                                     rxMsg = Message.readMessage(in);
                                     Message.printMessage(rxMsg);
 
-
+                                    //받은 데이터로부터 DB의 납부 여부 업데이트
                                     if (rxMsg.getDetail() == Packet.SUCCESS) {
                                         admissionDTO.setPaymentStatus("납부 완료");
                                         admissionDAO.UpdatePaymentStatus(admissionDTO);
                                     }
 
 
+                                    //납부 상태를 클라이언트에게 전송
                                     admissionDTO = admissionDAO.findAdmission(studentID);
                                     if (admissionDTO.getPaymentStatus().equals("납부 완료")) {
                                         txMsg = Message.makeMessage(Packet.RESULT, Packet.CHECK_SCHEDULE, Packet.SUCCESS, "");
@@ -350,19 +353,23 @@ public class Threads extends Thread {
 
                             //학생 기능 6번 (code 6) : 퇴사 신청
                             case Packet.REQUEST_WITHDRAWAL:
+                                //비용 정보를 얻기 위해 applicationDTO, admissionDTO 생성
                                 LocalDate now = LocalDate.now();
                                 applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 admissionDTO = admissionDAO.findAdmission(studentID);
 
+                                //admissionDTO가 비었으면 신청 대상자가 아니므로 오류 메시지 전송
                                 if(admissionDTO == null){
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.FAIL, "퇴사 신청 대상자가 아닙니다.")));
                                     out.flush();
                                 }else {
+                                    //비용 정보를 얻기 위해 applicationPreferenceDTO 생성
                                     applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId(), admissionDTO.getDormitoryId());
 
                                     WithdrawDTO withdraw = new WithdrawDTO();
                                     String data = rxMsg.getData();
 
+                                    //받은 데이터로부터 정보를 받아 DB에 업데이트를 하기 위해 withdraw 초기화
                                     String[] parts = data.split(",");
                                     String bankName = parts[0];
                                     String accountNumber = parts[1];
@@ -377,6 +384,7 @@ public class Threads extends Thread {
                                     MealDTO mealDTO = mealDAO.getMealInfo(applicationPreferenceDTO.getMeal_id());
                                     int totalFee = roomDTO.getFee() + mealDTO.getFee();
 
+                                    //환불 금액 계산
                                     if(now.isBefore(admissionDTO.getResidenceStartDate())){
                                         withdraw.setWithdrawalType("입사 전");
                                         //환불 금액
@@ -398,6 +406,7 @@ public class Threads extends Thread {
                                     }
 
 
+                                    //받은 데이터로부터 정보를 받아 DB에 업데이트를 하기 위해 withdraw 초기화
                                     withdraw.setWithdrawalDate(quitDate);
                                     withdraw.setBankName(bankName);
                                     withdraw.setAccountNumber(parseInt(accountNumber));
@@ -411,6 +420,7 @@ public class Threads extends Thread {
                                     admissionDAO.UpdateAdmissionStatus(admissionDTO);
                                     withdrawDAO.setWithdrawInfo(withdraw);
 
+                                    //결과 전송
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.REQUEST_WITHDRAWAL, Packet.SUCCESS, "")));
                                     out.flush();
                                 }
@@ -418,6 +428,7 @@ public class Threads extends Thread {
 
                             //학생 기능 7번 (code 7) : 환불 확인
                             case Packet.CHECK_REFUND:
+                                //환불 확인을 위해 WithdrawDTO, refundDTO 생성
                                 WithdrawDTO withdraw;
                                 withdraw = withdrawDAO.getWithdrawInfo(studentID);
 
@@ -425,11 +436,12 @@ public class Threads extends Thread {
                                 RefundDAO refundDAO = new RefundDAO();
                                 refundDTO = refundDAO.getRefundsByWithdrawId(withdraw.getWithdrawalId());
 
-
+                                //refundDTO가 비어있으면 퇴사 신청을 하지 않은 것이므로 오류 메시지 전송
                                 if(refundDTO == null){
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_REFUND, Packet.FAIL, "환불 처리가 되지 않았거나 퇴사 신청을 하지 않았습니다.")));
                                     out.flush();
                                 }else{
+                                    //환불 여부 확인 후 결과 전송
                                     String newData;
                                     if(refundDTO.getIsProcessed() == 1){
                                         newData = "취소";
@@ -779,8 +791,10 @@ public class Threads extends Thread {
                                 break;
 
                             case Packet.CHECK_DATE:
+                                //날짜에 따라 기능을 막기 위한 기능
                                 String feature;
 
+                                //기능에 따라 다른 일정을 가져오기 위한 if문
                                 if(rxMsg.getDetail() == Packet.APPLY_ADMISSION){
                                     feature = "생활관 입사 신청";
                                 } else if (rxMsg.getDetail() == Packet.CHECK_ADMISSION) {
@@ -791,7 +805,7 @@ public class Threads extends Thread {
                                     feature = "결핵진단서 제출";
                                 }
 
-
+                                //isSuccess 함수로부터 정보를 받아와 결과 전송
                                 if (isSuccess(feature)) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESPONSE, Packet.CHECK_PAY_DORMITORY, Packet.SUCCESS, "")));
                                     out.flush();
@@ -879,6 +893,7 @@ public class Threads extends Thread {
             default: throw new IllegalArgumentException("Invalid dormitory name: " + dormitoryName);
         }
     }
+
     private int mapMealId(String dormitoryName, String mealType) {
         int dormitoryId = mapDormitoryToId(dormitoryName);
         if(mealType.equals("선택안함")){
@@ -891,8 +906,6 @@ public class Threads extends Thread {
     }
 
     public boolean isSuccess(String feature){
-
-
         ScheduleService scheduleService = new ScheduleService();
         List<ScheduleDTO> s = scheduleService.getSchedules();
         for(ScheduleDTO schedule : s){

@@ -13,6 +13,8 @@ import java.util.List;
 public class ApplicantInfoDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
+    // Application_Preference에는 preference order로만 저장이 되어 있기에
+    // 적절한 질의를 통해 order 1의 정보, order 2의 정보를 따로 담아두도록 한다.
     public List<ApplicantInfoDTO> getApplicantDormitoryInfo() {
         List<ApplicantInfoDTO> applicantList = new ArrayList<>();
         String sql = "SELECT s.name AS student_name, " +

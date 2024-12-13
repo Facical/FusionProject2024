@@ -3,6 +3,9 @@ package service;
 import java.util.HashMap;
 import java.util.Map;
 
+// 학생 정보를 바탕으로 해서 실제 기숙사 입사에 필요한 점수를 계산한다.
+// 거리, 학점, 학생 타입(학부생 or 대학원생)을 활용한다.
+
 public class ScoreCalculator {
     private static final Map<String, Double> DISTANCE_BONUS;
 

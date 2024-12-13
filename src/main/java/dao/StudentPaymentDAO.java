@@ -10,9 +10,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+// 학생의 납부 정보를 조회하는 클래스
 public class StudentPaymentDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
 
+    // 납부한 학생들의 정보를 가져오는 함수
     public List<StudentPaymentDTO> getPaidStudentList() {
         List<StudentPaymentDTO> paidStudents = new ArrayList<>();
         String sql = "SELECT s.name AS student_name, d.name AS dormitory_name " +
@@ -40,6 +42,7 @@ public class StudentPaymentDAO {
         return paidStudents;
     }
 
+    // 미납부한 학생들의 정보를 가져오는 함수
     public List<StudentPaymentDTO> getUnpaidStudentList() {
         List<StudentPaymentDTO> unpaidStudents = new ArrayList<>();
         String sql = "SELECT s.name AS student_name, d.name AS dormitory_name " +
@@ -63,17 +66,6 @@ public class StudentPaymentDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return unpaidStudents;
-    }
-
-    private void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
-        try {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
-            if (conn != null) conn.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 }

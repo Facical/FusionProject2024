@@ -212,9 +212,7 @@ public class Threads extends Thread {
                             case Packet.CHECK_PAY_DORMITORY:
                                 applicationDTO = applicationDAO.getApplicationInfo(studentID);
                                 AdmissionDTO admissionDTO = admissionDAO.findAdmission(studentID);
-                                //ApplicationPreferenceDTO applicationPreferenceDTO = applicationPreferenceDAO.getApplicationPreference(applicationDTO.getApplicationId());
 
-                                // ApplicationPreferenceDTO applicationPreferenceDTO;
                                 if (admissionDTO == null) {
                                     out.write(Packet.makePacket(Message.makeMessage(Packet.RESULT, Packet.CHECK_PAY_DORMITORY, Packet.FAIL, "합격 대상자가 아닙니다.")));
                                     out.flush();
@@ -692,10 +690,10 @@ public class Threads extends Thread {
                                 // 요청 받음
                                 List<StudentPaymentDTO> paidStudentList = studentPaymentDAO.getPaidStudentList();
                                 String paidList = StudentPaymentCheckService.ListToString(paidStudentList);
-                                System.out.println(paidList + "test");
+                                System.out.println(paidList);
 
                                 if (paidStudentList.isEmpty())
-                                    System.out.println("질의 똑바로 ㄴㄴ");
+                                    System.out.println("리스트가 비어있습니다.");
 
                                 // 메시지로 작성 후 패킷화 해줌
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_PAID_STUDENTS,
@@ -714,8 +712,8 @@ public class Threads extends Thread {
                                 String unpaidList = StudentPaymentCheckService.ListToString(unpaidStudentList);
 
                                 if (unpaidStudentList.isEmpty())
-                                    System.out.println("질의 똑바로 ㄴㄴ");
-                                System.out.println(unpaidList + "test");
+                                    System.out.println("리스트가 비어있습니다.");
+                                System.out.println(unpaidList);
                                 // 메시지로 작성 후 패킷화 해줌
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.VIEW_UNPAID_STUDENTS,
                                         Packet.SUCCESS, unpaidList);
@@ -835,7 +833,7 @@ public class Threads extends Thread {
                             }
 
                             else if (loginSuccess && !flag) {
-                                gender = "123";
+                                gender = "";
                                 String responseData = user.getId() + "," + user.getRole() + "," + gender ;
                                 txMsg = Message.makeMessage(Packet.RESULT, Packet.LOGIN,
                                         Packet.SUCCESS, responseData);
@@ -897,7 +895,6 @@ public class Threads extends Thread {
         List<ScheduleDTO> s = scheduleService.getSchedules();
         for(ScheduleDTO schedule : s){
             if(schedule.getPeriodName().equals(feature)){
-                //String startDate, String startTime, String endDate, String endTime
                 return isWithinPeriod(schedule.getStartDate(),schedule.getStartHour(),schedule.getEndDate(),schedule.getEndHour());
             }
         }

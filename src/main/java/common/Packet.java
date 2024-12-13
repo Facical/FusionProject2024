@@ -1,7 +1,12 @@
 package common;
 
 
+import lombok.Getter;
+import lombok.Setter;
 import network.Message;
+
+@Getter
+@Setter
 
 public class Packet{
     public static final int LEN_HEADER = 6;
@@ -38,6 +43,7 @@ public class Packet{
     public static final byte PROCESS_WITHDRAWAL = 15;
     // 퇴사 신청자 조회 및 환불
 
+    // 날짜 확인용
     public static final byte CHECK_DATE = 0;
 
     // Protocol Detail
@@ -109,13 +115,4 @@ public class Packet{
 
         return packet;
     }
-    public byte[] getPacket(){
-        return packet;
-    }
-    public void setData(String data){
-        System.arraycopy(data.trim().getBytes(), 0, packet, LEN_HEADER, data.trim().getBytes().length);
-        packet[LEN_HEADER + data.trim().getBytes().length] = '\0';
-
-    }
-
 }

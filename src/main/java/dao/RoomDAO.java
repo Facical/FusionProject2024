@@ -67,13 +67,12 @@ public class RoomDAO {
         return roomDTO;
     }
 
-    public boolean registerRoom(RoomDTO roomDTO) {  // boolean 대신 int 반환
+    public boolean registerRoom(RoomDTO roomDTO) {
         Connection conn = null;
         PreparedStatement pstmt = null;
 
         try {
             conn = ds.getConnection();
-            // room_number,room_type, capacity, 일단 제외
             String sql = "INSERT INTO room (dormitory_id,fee) VALUES (?, ?)";
             pstmt = conn.prepareStatement(sql);
 

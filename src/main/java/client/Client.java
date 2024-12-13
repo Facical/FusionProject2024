@@ -154,8 +154,7 @@ public class Client {
                     System.out.println("============= 입사 신청 =============");
                     System.out.println("오름관 1동, 푸름관 3동 : 여자만 신청 가능");
                     System.out.println();
-                    StudentService studentService = new StudentService();
-                    String gender = studentService.getGender(loggedInUserId);
+
                     String firstDormitory = "";
                     String firstDormitoryMeal = "";
                     String secondDormitory = "";
@@ -178,7 +177,7 @@ public class Client {
                         System.out.print(firstDormitory + "의 식사 입력 (5일식, 7일식, 선택안함) : ");
                     }
                     firstDormitoryMeal = br.readLine();
-                    //111
+
                     // 2지망 생활관 입력 로직
                     while (true) {
                         System.out.print("2지망 생활관 입력 : ");
@@ -235,7 +234,6 @@ public class Client {
                         System.out.println("생활관 배정 및 합격자 발표 기간이 아닙니다!");
                         break;
                     }
-
 
                     txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_ADMISSION,
                             Packet.NOT_USED, "합격 여부 및 호실 확인 조회 요청");
@@ -416,6 +414,7 @@ public class Client {
                         System.out.println("퇴사 신청에 실패하였습니다.");
                     }
                 break;
+
                 case 7: //환불 결과 조회
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_REFUND, Packet.NOT_USED, "")));
                     out.flush();
@@ -433,6 +432,7 @@ public class Client {
                         System.out.println(rxMsg.getData());
                     }
                 break;
+
                 case 0:
                     System.out.println("프로그램을 종료합니다......");
                     txMsg = Message.makeMessage(Packet.RESULT, Packet.NOT_USED,
@@ -477,6 +477,7 @@ public class Client {
                         System.out.println("일정 등록 실패: " + rxMsg.getData());
                     }
                     break;
+
                 case 2: // 2.2 기능
                     System.out.println("=== 생활관 사용료 및 급식비 등록 ===");
                     System.out.print("생활관 입력 : ");
@@ -517,6 +518,8 @@ public class Client {
                     break;
 
                 case 3: // 2.3 기능
+
+                    // 데이터를 담지 않고 입사 신청자 조회 메시지를 서버로 전송한다
                     System.out.println("=== 입사 신청자 조회 ===");
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.VIEW_APPLICANTS,
@@ -526,7 +529,7 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
-                    // 서버가 보내준 패킷 받아서 해석
+                    // 서버가 DB 조회 후 메시지를 보내면 받아서 콘솔에 출력한다
                     rxMsg = new Message();
                     header = new byte[Packet.LEN_HEADER];
                     in.read(header);
@@ -539,6 +542,8 @@ public class Client {
                     break;
 
                 case 4: // 2.4 입사자 선발 및 호실 배정 기능
+
+                    // 데이터를 담지 않고 입사자 선발 및 호실 배정 요청 메시지를 서버로 전송한다
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.SELECT_STUDENTS,
                             Packet.NOT_USED,
@@ -547,6 +552,7 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
+                    // 서버가 DB 조회 후 메시지를 보내면 받아서 콘솔에 출력한다
                     rxMsg = new Message();
                     header = new byte[Packet.LEN_HEADER];
                     in.read(header);

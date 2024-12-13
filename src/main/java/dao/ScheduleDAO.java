@@ -9,7 +9,6 @@ import java.util.List;
 
 public class ScheduleDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
-    //private ScheduleDTO scheduleDTO;// = null;
 
     // 모든 선발 일정 조회
     public List<ScheduleDTO> getAllSchedules() {

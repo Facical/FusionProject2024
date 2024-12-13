@@ -14,7 +14,7 @@ import java.util.List;
 
 public class DormitoryDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
-
+    // DB에 dormitory 테이블에 있는 모든 정보를 가져오는 과정.
     public DormitoryDTO findDormitoryId() {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -27,7 +27,6 @@ public class DormitoryDAO {
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, dormitoryDTO.getDormitoryId());
             rs = pstmt.executeQuery();
-
             if (rs.next()) {
                 dormitoryDTO.setDormitoryId(rs.getInt("dormitory_id"));
             }

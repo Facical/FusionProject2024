@@ -135,38 +135,31 @@ public class Threads extends Thread {
 
                             //학생 기능 2번 (code 2) : 입사신청
                             case Packet.APPLY_ADMISSION:
+                                // 클라이언트로부터 받은 데이터 파싱
                                 String admissionData = rxMsg.getData();
                                 String[] admissionParts = admissionData.split(",");
-                                //firstDormitory + "," + firstDormitoryMeal + "," + secondDormitory + "," + secondDormitoryMeal;
+                                // 관련 DTO클래스들 생성
                                 ApplicationDTO applicationDTO = new ApplicationDTO();
                                 ApplicationPreferenceDTO applicationPreferenceDTO = new ApplicationPreferenceDTO();
-
+                                // application 서비스를 통해 application 테이블에 INSERT 수행.
                                 applicationDTO.setStudentId(loggedInUserId);
                                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
                                 applicationDTO.setApplicationDate(LocalDate.now().format(formatter));
                                 boolean applicationSuccess = applicationService.applyAdmission(applicationDTO);
-
+                                // application 서비스를 통해 학생 ID 정보를 이용해서 applicationID를 찾음.
                                 int applicationId = applicationService.findApplicationId(loggedInUserId);
                                 applicationPreferenceDTO.setApplication_id(applicationId);
                                 applicationPreferenceDTO.setDormitory_id(mapDormitoryToId(admissionParts[0]));
                                 applicationPreferenceDTO.setPreference_order(1); // 1지망
-
-
                                 applicationPreferenceDTO.setMeal_id(mapMealId(admissionParts[0], admissionParts[1]));
-
-
+                                // application 서비스를 통해 applicationPreference 테이블에 1지망 정보에 관한 INSERT 수행.
                                 boolean preferenceSuccess1 = applicationPreferenceService.applyPreference(applicationPreferenceDTO);
-
-
                                 applicationPreferenceDTO.setDormitory_id(mapDormitoryToId(admissionParts[2]));
                                 applicationPreferenceDTO.setPreference_order(2); // 2지망
-
-
                                 applicationPreferenceDTO.setMeal_id(mapMealId(admissionParts[2], admissionParts[3]));
-
+                                // application 서비스를 통해 applicationPreference 테이블에 2지망 정보에 관한 INSERT 수행.
                                 boolean preferenceSuccess2 = applicationPreferenceService.applyPreference(applicationPreferenceDTO);
-
-
+                                // 데이터베이스에서 테이블에 정상적으로 INSERT 되었을 경우 클라이언트에게 결과 메시지 전송.
                                 if (applicationSuccess && preferenceSuccess1 && preferenceSuccess2) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.APPLY_ADMISSION,
@@ -265,8 +258,10 @@ public class Threads extends Thread {
                                     for (TuberculosisDTO certDTO : allCertificates) {
                                         try {
                                             if (certDTO.getImageData() != null) {
+
                                                 String fileName = certDTO.getStudentId() + "_" + certDTO.getFileName();
                                                 String filePath = savePath + File.separator + fileName;
+                                                //이 정보를 클라이언트에서 실행해야하나?
                                                 Files.write(Paths.get(filePath), certDTO.getImageData());
                                             }
                                         } catch (IOException e) {
@@ -287,6 +282,7 @@ public class Threads extends Thread {
                                                 Packet.FAIL,
                                                 "다운로드 실패: " + errorMessage);
                                     }
+
                                 }
                                 // 제출 처리
                                 else {
@@ -473,12 +469,15 @@ public class Threads extends Thread {
 
                             //관리자 기능 2번 (code 9) : 생활관 사용료 및 급식비 등록
                             case Packet.REGISTER_FEE:
+                                //클라이언트로 부터 요청 메시지 데이터 파싱.
                                 String feeData = rxMsg.getData();
                                 String[] parts = feeData.split(",");
+                                // 필요한 DTO 생성(RoomDTO)
                                 RoomDTO roomDTO = new RoomDTO();
                                 int dormitory_id = -1;
                                 int fee = Integer.parseInt(parts[1]);
                                 boolean updateSuccess = false;
+                                // 클라이언트가 입력한 생활관 이름을 DB에 저장되어 있는 dormitory_id로 바꾸는 과정.
                                 switch (parts[0]) {
                                     case "푸름관1동":
                                         dormitory_id = 1;
@@ -509,6 +508,7 @@ public class Threads extends Thread {
                                         roomDTO.setDormitoryId(7);
                                         break;
                                 }
+                                // DB에 ROOM 테이블에 RoomService 를 통해 생활관과 생활관비 정보를 UPDATE 하는 과정.
                                 if (dormitory_id > -1) {
                                     updateSuccess = roomService.updateRoomFeeByDormitoryId(dormitory_id, fee);
                                     if (updateSuccess) {
@@ -519,36 +519,32 @@ public class Threads extends Thread {
                                 } else {
                                     System.out.println("Invalid dormitory name: " + parts[0]);
                                 }
-
-                                //Room 등록
-//                                boolean roomSuccess = roomService.registerRoom(roomDTO);
-
                                 int dormitoryId = roomDTO.getDormitoryId();
-
-                                MealDTO mealDTO1 = new MealDTO(); // 7일식
+                                // 7일식 정보 DTO에 매핑.
+                                MealDTO mealDTO1 = new MealDTO();
                                 mealDTO1.setDormitoryId(dormitoryId);
                                 mealDTO1.setName("7일식");
-                                mealDTO1.setFee(Integer.parseInt(parts[3])); // sevenMealFee
-
-                                MealDTO mealDTO2 = new MealDTO(); // 5일식
+                                mealDTO1.setFee(Integer.parseInt(parts[3]));
+                                // 5일식 정보 DTO에 매핑.
+                                MealDTO mealDTO2 = new MealDTO();
                                 mealDTO2.setDormitoryId(dormitoryId);
                                 mealDTO2.setName("5일식");
-                                mealDTO2.setFee(Integer.parseInt(parts[2])); // fiveMealFee
-                                // Meal 등록
+                                mealDTO2.setFee(Integer.parseInt(parts[2]));
+                                // Meal 서비스를 통해 DB에 MEAL 테이블에 INSERT하는 과정.
                                 boolean mealSuccess1 = mealService.registerMeal(mealDTO1);
                                 boolean mealSuccess2 = mealService.registerMeal(mealDTO2);
 
-                                // 선택안함 급식비 등록 (오름관2동이나 3동이 아닐 때만 추가)
+                                // "선택안함"을 위한 MEAL 테이블에 INSERT 추가.
+                                // 오름관2동이나 3동이 아닐 때만 추가
                                 boolean mealSuccess3 = false;
                                 if (!(parts.length == 5 && Integer.parseInt(parts[4]) == 0)) {
                                     MealDTO mealDTO3 = new MealDTO();
                                     mealDTO3.setDormitoryId(dormitoryId);
                                     mealDTO3.setName("선택안함");
-                                    mealDTO3.setFee(0); // 급식비 0원
-
+                                    mealDTO3.setFee(0);
                                     mealSuccess3 = mealService.registerMeal(mealDTO3);
                                 }
-
+                                // MEAL 테이블 및 ROOM 테이블에 정상적으로 INSERT 및 UPDATE 되었을 경우 결과 메시지를 클라이언트에게 전송.
                                 if (updateSuccess && mealSuccess1 && mealSuccess2) {
                                     txMsg = Message.makeMessage(Packet.RESULT,
                                             Packet.REGISTER_FEE,
@@ -838,7 +834,7 @@ public class Threads extends Thread {
             closeResources();
         }
     }
-
+    // 사용자가 입력한 생활관이름을 DB에 저장되어 있는 dormitory_id로 매핑하는 메소드.
     private int mapDormitoryToId(String dormitoryName) {
         switch (dormitoryName) {
             case "푸름관1동": return 1;
@@ -851,6 +847,7 @@ public class Threads extends Thread {
             default: throw new IllegalArgumentException("Invalid dormitory name: " + dormitoryName);
         }
     }
+    // 사용자가 입력한 급식비(5일식, 7일식, 선택안함)를 DB에 MEAL 테이블에서 meal_id로 매핑하는 과정.
     private int mapMealId(String dormitoryName, String mealType) {
         int dormitoryId = mapDormitoryToId(dormitoryName);
         if(mealType.equals("선택안함")){
@@ -861,10 +858,8 @@ public class Threads extends Thread {
             return mealId;
         }
     }
-
+    // isWithinPeriod 메서드를 이용해 날짜에 따라 기능을 사용할 수 있는지 확인하는 메서드.
     public boolean isSuccess(String feature){
-
-
         ScheduleService scheduleService = new ScheduleService();
         List<ScheduleDTO> s = scheduleService.getSchedules();
         for(ScheduleDTO schedule : s){
@@ -875,23 +870,20 @@ public class Threads extends Thread {
         }
         return false;
     }
+    // 선발일정에 대해 DB에 시작 날짜 및 종료날짜 사이에 현재 날짜가 포함되는지 확인하는 메서드.
     public static boolean isWithinPeriod(String startDate, String startTime, String endDate, String endTime) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
         // 시작 시간 및 종료 시간
         LocalDateTime startDateTime = LocalDateTime.parse(startDate + " " + startTime, dateTimeFormatter);
         LocalDateTime endDateTime = LocalDateTime.parse(endDate + " " + endTime, dateTimeFormatter);
-
         // 현재 시간
         LocalDateTime now = LocalDateTime.now();
         System.out.println("현재 시간: " + now);
         System.out.println("시작 시간: " + startDateTime);
         System.out.println("종료 시간: " + endDateTime);
-
         // 현재 시간이 기간 내에 있는지 확인
         boolean result = (now.isEqual(startDateTime) || now.isAfter(startDateTime)) && (now.isEqual(endDateTime) || now.isBefore(endDateTime));
         System.out.println("결과: " + result);
-
         return result;
     }
 

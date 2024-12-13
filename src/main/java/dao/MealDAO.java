@@ -45,6 +45,7 @@ public class MealDAO {
 
         return mealDTO;
     }
+    // DB에 MEAL 테이블에서 mealID를 가져오기 위한 과정.
     public int getMealId(int dormitoryId, String mealName){
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -54,7 +55,6 @@ public class MealDAO {
             conn = ds.getConnection();
             String sql = "SELECT meal_id FROM meal WHERE dormitory_id = ? AND name = ?";
             pstmt = conn.prepareStatement(sql);
-            // PreparedStatement에 파라미터 설정
             pstmt.setInt(1, dormitoryId);
             pstmt.setString(2, mealName);
             rs = pstmt.executeQuery();
@@ -68,8 +68,8 @@ public class MealDAO {
         }
         return mealId;
     }
-
-    public boolean registerMeal(MealDTO mealDTO) {  // boolean 대신 int 반환
+    // mealDTO 정보를 이용해 DB에 meal 테이블에 INSERT 하는 과정.
+    public boolean registerMeal(MealDTO mealDTO) {
         Connection conn = null;
         PreparedStatement pstmt = null;
 

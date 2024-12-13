@@ -49,21 +49,19 @@ public class ApplicationPreferenceDAO {
 
         return applicationPreferenceDTO;
     }
-    public boolean applyPreference(ApplicationPreferenceDTO applicationPreferenceDTO) {  // boolean 대신 int 반환
+    // applicationPreferenceDTO를 이용해 application_preference 테이블에 INSERT 하는 과정.
+    public boolean applyPreference(ApplicationPreferenceDTO applicationPreferenceDTO) {
         Connection conn = null;
         PreparedStatement pstmt = null;
 
         try {
             conn = ds.getConnection();
-
             String sql = "INSERT INTO application_preference (application_id,dormitory_id,preference_order,meal_id) VALUES (?, ?, ?, ?)";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, applicationPreferenceDTO.getApplication_id());
             pstmt.setInt(2, applicationPreferenceDTO.getDormitory_id());
             pstmt.setInt(3, applicationPreferenceDTO.getPreference_order());
             pstmt.setInt(4, applicationPreferenceDTO.getMeal_id());
-
-
             int result = pstmt.executeUpdate();
             return result > 0;
         } catch (SQLException e) {

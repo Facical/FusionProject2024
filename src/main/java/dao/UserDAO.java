@@ -7,7 +7,6 @@ import java.sql.*;
 
 public class UserDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
-
     public UserDTO findUser(int userId) {
         Connection conn = null;
         PreparedStatement pstmt = null;

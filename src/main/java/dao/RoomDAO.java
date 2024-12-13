@@ -13,20 +13,16 @@ import java.util.*;
 
 public class RoomDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
-
+    // dormitoryId, fee 정보를 이용해 DB에 Room 테이블에 UPDATE하는 과정.
     public boolean updateRoomFeeByDormitoryId(int dormitoryId, int fee){
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
             conn = ds.getConnection();
-            // room_number,room_type, capacity, 일단 제외
             String sql = "UPDATE room SET fee = ? WHERE dormitory_id = ?";
             pstmt = conn.prepareStatement(sql);
-
             pstmt.setInt(1, fee);
             pstmt.setInt(2, dormitoryId);
-
-
             int result = pstmt.executeUpdate();
             return result > 0;
         } catch (SQLException e) {
@@ -66,8 +62,8 @@ public class RoomDAO {
         }
         return roomDTO;
     }
-
-    public boolean registerRoom(RoomDTO roomDTO) {  // boolean 대신 int 반환
+    // roomDTO 정보를 이용해 room테이블에 INSERT하는 과정.
+    public boolean registerRoom(RoomDTO roomDTO) {
         Connection conn = null;
         PreparedStatement pstmt = null;
 

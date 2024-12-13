@@ -13,7 +13,7 @@ import java.util.List;
 
 public class StudentDAO {
     private final DataSource ds = PooledDataSource.getDataSource();
-
+    // DB에 STUDENT 테이블에 있는 학생의 모든 정보를 가져오기 위한 과정.
     public List<StudentDTO> getAllStudentInfo() {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -45,6 +45,7 @@ public class StudentDAO {
         }
         return students;
     }
+    // 학생ID를 이용해 남자인지 여자인지 구분하기 위한 과정.
     public String getGender(int studentId){
         Connection conn = null;
         PreparedStatement pstmt = null;

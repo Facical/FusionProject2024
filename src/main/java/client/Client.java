@@ -113,17 +113,22 @@ public class Client {
         while (true) {
             int studentMenu = StudentViewer.viewStudentPage();
             switch(studentMenu) {
+
+                // 1.1 선발 일정 조회 기능
                 case 1:
-                    txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_SCHEDULE,
-                            Packet.NOT_USED, "일정 조회 요청");
+                    // 서버에 일정 조회 요청 메시지를 생성하고 패킷으로 변환하여 전송
+                    txMsg = Message.makeMessage(Packet.REQUEST, Packet.CHECK_SCHEDULE, Packet.NOT_USED, "일정 조회 요청");
                     packet = Packet.makePacket(txMsg);
                     out.write(packet);
                     out.flush();
 
+                    // 서버로부터 응답 메시지를 수신하여 처리
                     rxMsg = Message.readMessage(in);
 
+                    // 응답 메시지가 결과 타입인 경우
                     if (rxMsg.getType() == Packet.RESULT) {
                         if (rxMsg.getDetail() == Packet.SUCCESS) {
+                            // 일정 데이터가 성공적으로 수신된 경우, 데이터를 파싱하여 각 일정을 출력
                             String[] schedules = rxMsg.getData().split(";");
                             for (String schedule : schedules) {
                                 String[] parts = schedule.split(",");
@@ -135,6 +140,7 @@ public class Client {
                                 }
                             }
                         } else {
+                            // 조회 실패 시, 서버에서 전달된 실패 메시지를 출력
                             System.out.println("일정 조회 실패: " + rxMsg.getData());
                         }
                     }
@@ -320,57 +326,66 @@ public class Client {
                     }
                     break;
 
+                // 1.5 결핵진단서 제출 기능
                 case 5:
+                    // 결핵진단서 제출 가능 기간인지 체크하는 패킷 전송
                     out.write(Packet.makePacket(Message.makeMessage(Packet.REQUEST, Packet.CHECK_DATE, Packet.SUBMIT_CERTIFICATE, "")));
                     out.flush();
 
+                    // 서버로부터 응답 수신
                     rxMsg = Message.readMessage(in);
                     if(rxMsg.getDetail() == Packet.FAIL){
                         System.out.println("결핵진단서 제출 기간이 아닙니다!");
                         break;
                     }
 
+                    // 파일 경로 입력 받기
                     System.out.println("=== 결핵진단서 제출 ===");
                     System.out.print("제출할 파일 경로 입력: ");
                     String filePath = br.readLine();
 
+                    // 파일 존재 여부 및 읽기 권한 체크
                     File file = new File(filePath);
                     if (!file.exists() || !file.canRead()) {
                         System.out.println("파일이 존재하지 않습니다.");
                         break;
                     }
 
+                    // 파일명과 확장자 추출
                     String fileName = file.getName();
                     String fileType = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
 
+                    // 허용된 파일 형식인지 검사 (jpg, jpeg, png만 허용)
                     if (!fileType.equals("jpg") && !fileType.equals("jpeg") && !fileType.equals("png")) {
                         System.out.println("지원되지 않는 파일 형식입니다. (jpg, jpeg, png만 가능)");
                         break;
                     }
 
+                    // 파일을 바이트 배열로 읽기
                     byte[] fileData = Files.readAllBytes(file.toPath());
                     if (fileData == null || fileData.length == 0) {
                         System.out.println("파일 데이터가 비어 있습니다.");
-                        break; // 비어 있는 데이터 처리 종료
+                        break;
                     }
 
-                    // 파일 크기 제한 추가 (10MB)
+                    // 파일 크기 제한 검사 (10MB)
                     if (fileData.length > 10 * 1024 * 1024) {
                         System.out.println("파일 크기가 너무 큽니다. (최대 10MB)");
                         break;
                     }
 
+                    // 파일 데이터를 Base64로 인코딩
                     String encodedData = Base64.getEncoder().encodeToString(fileData);
                     System.out.println("Encoded Data Length: " + encodedData.length()); // 디버깅용 로그
 
-
-
+                    // 전송할 데이터 포맷 생성 (학번,인코딩된데이터,파일명,파일타입)
                     String certificateData = String.format("%d,%s,%s,%s",
                             studentId,
                             encodedData,
                             fileName,
                             fileType);
 
+                    // 결핵진단서 제출 요청 패킷 생성 및 전송
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.SUBMIT_CERTIFICATE,
                             Packet.NOT_USED,
@@ -379,6 +394,7 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
+                    // 서버로부터 제출 결과 수신
                     rxMsg = Message.readMessage(in);
                     if (rxMsg.getDetail() == Packet.SUCCESS) {
                         System.out.println("결핵진단서 제출 성공");
@@ -449,31 +465,35 @@ public class Client {
         while (true) {
             int adminMenu = AdminViewer.viewAdminPage();
             switch(adminMenu) {
-                case 1:
 
+                // 2.1 선발 일정 등록 기능
+                case 1:
+                    // 선발 일정 등록 시작 안내 및 사용자 입력 받기
                     System.out.println("=== 선발 일정 등록 ===");
                     System.out.print("기간명 입력: ");
-                    String periodName = br.readLine();
+                    String periodName = br.readLine(); // 기간명 입력
                     System.out.print("시작일 입력 (yyyy-MM-dd HH:mm:ss): ");
-                    String startDate = br.readLine();
+                    String startDate = br.readLine(); // 시작일 입력
                     System.out.print("종료일 입력 (yyyy-MM-dd HH:mm:ss): ");
-                    String endDate = br.readLine();
+                    String endDate = br.readLine(); // 종료일 입력
 
-                    String scheduleData = String.format("%s,%s,%s",
-                            periodName, startDate, endDate);
+                    // 입력받은 데이터를 일정 데이터 형식으로 포맷
+                    String scheduleData = String.format("%s,%s,%s", periodName, startDate, endDate);
 
-                    txMsg = Message.makeMessage(Packet.REQUEST,
-                            Packet.REGISTER_SCHEDULE,
-                            Packet.NOT_USED, scheduleData);
+                    // 일정 등록 요청 메시지 생성 및 패킷 전송
+                    txMsg = Message.makeMessage(Packet.REQUEST, Packet.REGISTER_SCHEDULE, Packet.NOT_USED, scheduleData);
                     packet = Packet.makePacket(txMsg);
                     out.write(packet);
                     out.flush();
 
+                    // 서버로부터 응답 메시지 수신 및 결과 처리
                     rxMsg = Message.readMessage(in);
 
                     if (rxMsg.getDetail() == Packet.SUCCESS) {
+                        // 일정 등록 성공 시 출력
                         System.out.println("일정 등록 성공!");
                     } else {
+                        // 일정 등록 실패 시 실패 사유 출력
                         System.out.println("일정 등록 실패: " + rxMsg.getData());
                     }
                     break;
@@ -611,10 +631,12 @@ public class Client {
                     System.out.println(rxMsg.getData());
                     break;
 
+
+                // 2.7 결핵진단서 제출 현황 조회 및 다운로드 기능
                 case 7:
                     System.out.println("=== 결핵진단서 제출 현황 ===");
 
-                    // 먼저 제출 현황 조회
+                    // 서버에 결핵진단서 제출 현황 조회 요청
                     txMsg = Message.makeMessage(Packet.REQUEST,
                             Packet.CHECK_CERTIFICATES,
                             Packet.NOT_USED,
@@ -623,12 +645,15 @@ public class Client {
                     out.write(packet);
                     out.flush();
 
+                    // 서버로부터 제출 현황 데이터 수신
                     rxMsg = Message.readMessage(in);
 
                     if (rxMsg.getType() == Packet.RESULT) {
                         if (rxMsg.getDetail() == Packet.SUCCESS) {
+                            // 세미콜론으로 구분된 진단서 정보를 배열로 분리
                             String[] certificates = rxMsg.getData().split(";");
                             if (certificates.length > 0 && !certificates[0].trim().isEmpty()) {
+                                // 각 진단서 정보 출력 (학생ID, 제출일)
                                 for (String cert : certificates) {
                                     String[] parts = cert.split(",");
                                     System.out.println("학생 ID: " + parts[0]);
@@ -636,12 +661,12 @@ public class Client {
                                     System.out.println("---------------");
                                 }
 
-                                // 다운로드 여부 확인
+                                // 진단서 다운로드 여부 확인
                                 System.out.print("진단서 파일을 다운로드하시겠습니까? (Y/N): ");
                                 String answer = br.readLine().trim().toUpperCase();
 
                                 if (answer.equals("Y")) {
-                                    // 단순히 "DOWNLOAD" 요청을 보내서 서버가 Base64 인코딩된 파일 리스트를 보내도록 수정 필요
+                                    // 서버에 다운로드 요청
                                     txMsg = Message.makeMessage(Packet.REQUEST,
                                             Packet.SUBMIT_CERTIFICATE,
                                             Packet.NOT_USED,
@@ -650,51 +675,56 @@ public class Client {
                                     out.write(packet);
                                     out.flush();
 
+                                    // 서버로부터 파일 데이터 수신
                                     rxMsg = Message.readMessage(in);
                                     if (rxMsg.getDetail() == Packet.SUCCESS) {
+                                        // 저장 경로 입력 받기
                                         System.out.print("저장할 디렉토리 경로를 입력하세요: ");
                                         String savePath = br.readLine().trim();
 
-                                        // 서버에서 받은 데이터: "studentId,fileName,fileType,base64data;..."
+                                        // 서버에서 받은 데이터 파싱 (형식: "studentId,fileName,fileType,base64data;...")
                                         String serverData = rxMsg.getData().trim();
                                         String[] entries = serverData.split(";");
 
-                                        // 디렉토리 존재 여부 확인 및 생성
+                                        // 저장 디렉토리 생성
                                         File dir = new File(savePath);
                                         if (!dir.exists()) {
                                             dir.mkdirs();
                                         }
 
+                                        // 각 진단서 파일 처리
                                         for (String entry : entries) {
                                             entry = entry.trim();
                                             if (entry.isEmpty()) continue;
 
+                                            // 파일 데이터 파싱
                                             String[] fileParts = entry.split(",");
                                             if (fileParts.length != 4) {
                                                 System.err.println("잘못된 데이터 포맷: " + entry);
                                                 continue;
                                             }
 
+                                            // 파일 정보 추출
                                             String sid = fileParts[0].trim();
                                             String fName = fileParts[1].trim();
                                             String fType = fileParts[2].trim();
                                             String base64Data = fileParts[3].trim();
 
+                                            // base64 데이터 유효성 검사
                                             if (base64Data.isEmpty()) {
                                                 System.err.println("Base64 데이터가 비어있습니다: " + entry);
                                                 continue;
                                             }
 
-
-                                            // 여기서 실제 파일 쓰기
-                                            // 클라이언트 로컬 디스크에 파일 저장
+                                            // Base64 디코딩 및 파일 저장
                                             try {
+                                                // Base64 문자열을 바이트 배열로 디코딩
                                                 byte[] fileData = Base64.getDecoder().decode(base64Data);
-                                                // fileData를 로컬에 저장
+                                                // 파일명 형식: studentId_fileName
                                                 File outFile = new File(savePath, sid + "_" + fName);
                                                 Files.write(outFile.toPath(), fileData);
                                             } catch (IllegalArgumentException e) {
-                                                // base64 디코딩 오류 발생 시, 어떤 문자열인지 출력해서 디버깅
+                                                // Base64 디코딩 실패 시 디버깅 정보 출력
                                                 System.err.println("Base64 디코딩 오류 발생: " + base64Data);
                                                 e.printStackTrace();
                                             }
@@ -713,20 +743,20 @@ public class Client {
                     }
                     break;
 
-                case 8: // 퇴사 신청자 조회 및 환불
+                case 8: // 2.8 퇴사 신청자 조회 및 환불 처리 기능
                     System.out.println("=== 퇴사 신청자 조회 및 환불 ===");
 
-                    txMsg = Message.makeMessage(Packet.REQUEST,
-                            Packet.PROCESS_WITHDRAWAL,
-                            Packet.NOT_USED,
-                            "approved_withdrawals");
+                    // 승인된 퇴사자 목록 요청 메시지 생성 및 전송
+                    txMsg = Message.makeMessage(Packet.REQUEST, Packet.PROCESS_WITHDRAWAL, Packet.NOT_USED, "approved_withdrawals");
                     packet = Packet.makePacket(txMsg);
                     out.write(packet);
                     out.flush();
 
+                    // 서버로부터 응답 메시지 수신
                     rxMsg = Message.readMessage(in);
 
                     if (rxMsg.getDetail() == Packet.SUCCESS) {
+                        // 수신된 데이터를 줄 단위로 분리
                         String[] lines = rxMsg.getData().split("\n");
                         String currentDorm = null;
                         boolean hasWithdraws = false;
@@ -734,10 +764,11 @@ public class Client {
                         for (String line : lines) {
                             String[] parts = line.split("\\|");
                             if (parts[0].equals("DORM_START")) {
+                                // 생활관 시작 구간
                                 currentDorm = parts[1];
                                 System.out.println("\n=== " + currentDorm + " ===");
-                            }
-                            else if (parts[0].equals("STUDENT")) {
+                            } else if (parts[0].equals("STUDENT")) {
+                                // 학생 퇴사 정보 출력
                                 hasWithdraws = true;
                                 System.out.println("학생명: " + parts[1] + " (학생ID: " + parts[2] + ")");
                                 System.out.println("퇴사일: " + parts[3]);
@@ -745,8 +776,8 @@ public class Client {
                                 System.out.println("계좌번호: " + parts[5]);
                                 System.out.println("환불금액: " + parts[6]);
                                 System.out.println("---------------");
-                            }
-                            else if (parts[0].equals("DORM_END")) {
+                            } else if (parts[0].equals("DORM_END")) {
+                                // 생활관 종료 구간
                                 if (!hasWithdraws && currentDorm != null) {
                                     System.out.println("해당 생활관의 퇴사 신청자가 없습니다.");
                                     hasWithdraws = false;
@@ -754,30 +785,34 @@ public class Client {
 
                             }
                         }
+
                         if (hasWithdraws) {
+                            // 퇴사자가 있을 경우 환불 처리 여부 확인
                             System.out.print("\n환불 처리를 진행하시겠습니까? (Y/N): ");
                             String answer = br.readLine().trim().toUpperCase();
 
                             if (answer.equals("Y")) {
-                                txMsg = Message.makeMessage(Packet.REQUEST,
-                                        Packet.PROCESS_WITHDRAWAL,
-                                        Packet.SUCCESS,
-                                        "process_refunds");
+                                // 환불 처리 요청 메시지 생성 및 전송
+                                txMsg = Message.makeMessage(Packet.REQUEST, Packet.PROCESS_WITHDRAWAL, Packet.SUCCESS, "process_refunds");
                                 packet = Packet.makePacket(txMsg);
                                 out.write(packet);
                                 out.flush();
 
                                 rxMsg = Message.readMessage(in);
                                 if (rxMsg.getDetail() == Packet.SUCCESS) {
+                                    // 환불 처리 성공 메시지 출력
                                     System.out.println("환불 처리가 완료되었습니다.");
                                 } else {
+                                    // 환불 처리 실패 메시지 출력
                                     System.out.println("환불 처리 중 오류가 발생했습니다.");
                                 }
                             }
                         } else {
-                            //System.out.println("\n퇴사 신청자가 없습니다.");
+                            // 퇴사 신청자가 없는 경우
+                            System.out.println("승인된 퇴사 신청자가 없습니다.");
                         }
                     } else {
+                        // 승인된 퇴사자가 없는 경우 메시지 출력
                         System.out.println("승인된 퇴사 신청자가 없습니다.");
                     }
                     break;
